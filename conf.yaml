@@ -1,0 +1,51 @@
+models:
+  SRC1:
+    name: 'crab'
+    TS: 0
+    spatial:
+      type: point
+      parameters:
+        ra: 30 deg
+        dec: 45 deg
+    spectrum:
+      PL:
+        norm: 7e-10 ph cm-2 s-1 TeV-1
+        index: 2.3
+        en_ref: 1 TeV
+  GRB:
+    name: 'whatever'
+    TS: 1
+    spatial:
+      type: point
+      parameters:
+        ra: 30 deg
+        dec: 45 deg
+    spectrum:
+      PL:
+        norm: 7e-11 ph cm-2 s-1 TeV-1
+        index: 2.5
+        en_ref: 1 TeV
+    temporal:
+      type: lightcurve
+      parameters:
+        path: 0
+        norm: 0
+
+
+
+# HERE THE SIMULATION PARAMETERS
+
+simulation:
+  model: crab       # give path for model
+  position:
+    ra: 0           # use right quantities here
+    dec: 0          # use right quantities here
+  radius: 5         # radius in deg
+  irf:
+  caldb:
+  time:
+    tmin: 0         # use right quantities here
+    tmax: 1800      # use right quantities here
+  seed:
+  debug: False
+  save: mem
