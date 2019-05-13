@@ -1,5 +1,8 @@
 import sys
 import argparse
+import yaml
+import subprocess
+
 
 from background_sim import simulate_background
 
@@ -39,5 +42,10 @@ if __name__ == '__main__':
         sys.exit(0)
 
     if args.background:
-        simulate_background(args.config_file)
+        infile = args.config_file
+
+        config_in = yaml.safe_load(open(infile))
+        realizations = config_in['sim']['realizations']
+        p = subprocess.Popen(['python', 'background_sim.py', infile])
+        (result, error) = p.communicate() # if everything goes well, the output is none
 

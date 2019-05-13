@@ -44,3 +44,5 @@ def simulate_background(input_yaml):
     # sim.execute()
 
 
+if __name__ == '__main__':
+    simulate_background(sys.argv[1])
