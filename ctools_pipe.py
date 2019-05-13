@@ -1,16 +1,8 @@
-import gammalib
-import ctools
-import cscripts
 import sys
-import os
-import yaml
 import argparse
-from astropy.io.misc import yaml as yl_as
-import astropy.units as u
 
 from background_sim import simulate_background
 
-# add jobs scheduler: common to all scripts
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Simulate some CTA Science.')
@@ -25,6 +17,8 @@ if __name__ == '__main__':
                         metavar='background.yaml',
                         type=str,
                         help='yaml configuration file for background simulation')
+
+    # add jobs scheduler: common to all scripts
 
     try:
         args = parser.parse_args()
