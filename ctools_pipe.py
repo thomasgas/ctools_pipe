@@ -4,26 +4,46 @@ import cscripts
 import sys
 import os
 import yaml
-
+import argparse
 from astropy.io.misc import yaml as yl_as
-# from astropy
+import astropy.units as u
 
-#
-# sim = ctools.ctobssim()
-# sim['inmodel'] = list_obssim[0]
-# sim['caldb'] = list_obssim[1]
-# sim['irf'] = list_obssim[2]
-# sim['ra'] = list_obssim[3]
-# sim['dec'] = list_obssim[4]
-# sim['rad'] = list_obssim[5]
-# sim['tmin'] = list_obssim[6]
-# sim['tmax'] = list_obssim[7]
-# sim['emin'] = list_obssim[8]
-# sim['emax'] = list_obssim[9]
-# sim['outevents'] = nome_fits
-# sim['debug'] = debug_sim
-# sim['seed'] = seed_in
-# sim.execute()
+from background_sim import simulate_background
 
-test = yaml.safe_load(open("conf.yaml"))
-print(yaml.dump(test))
+# add jobs scheduler: common to all scripts
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Simulate some CTA Science.')
+
+    parser.add_argument('-b', '--background',
+                        dest='background',
+                        action='store_const',
+                        const=sum,
+                        help='Do the simulation of the background. Need yaml input file.')
+
+    parser.add_argument('config_file',
+                        metavar='background.yaml',
+                        type=str,
+                        help='yaml configuration file for background simulation')
+
+    try:
+        args = parser.parse_args()
+    except:
+        parser.print_help()
+        print(" ------------------------- ")
+        print("|      Need more help?    |")
+        print("| gasparethomas@gmail.com |")
+        print(" ------------------------- ")
+        print(" \ ")
+        print("  \ ")
+        print("    /¯¯\ ")
+        print("    @  @")
+        print("    || |/")
+        print("    |\_/|")
+        print("    \___/")
+        print()
+        sys.exit(0)
+
+    if args.background:
+        simulate_background(args.config_file)
+

@@ -1,0 +1,15 @@
+IRF:
+  zenith: [20, 40]
+  subarray: full
+  site: North
+  time: '0.5h'
+  pointing: average
+  prod:
+    number: 3b
+    version: 2
+sim:
+  realizations: 1
+  delta_t: 10000 s
+  delta_e:
+    e_min: 30 GeV
+    e_max: 10 TeV
