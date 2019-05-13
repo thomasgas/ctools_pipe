@@ -35,7 +35,7 @@ if __name__ == '__main__':
         print("  \ ")
         print("    /¯¯\ ")
         print("    @  @")
-        print("    || |/")
+        print("    || |/"
         print("    |\_/|")
         print("    \___/")
         print()
@@ -47,5 +47,7 @@ if __name__ == '__main__':
         config_in = yaml.safe_load(open(infile))
         realizations = config_in['sim']['realizations']
         p = subprocess.Popen(['python', 'background_sim.py', infile])
-        (result, error) = p.communicate() # if everything goes well, the output is none
+
+        # if everything goes well, the output is None
+        (result, error) = p.communicate()
 
