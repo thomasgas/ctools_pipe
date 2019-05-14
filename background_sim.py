@@ -6,12 +6,10 @@ import os
 import yaml
 from irf_handler import IRFPicker
 import numpy as np
-
-from astropy.io.misc import yaml as yl_as
 import astropy.units as u
 
 
-def simulate_background(input_yaml, count, seed):
+def simulate_background(input_yaml, count):
     config_in = yaml.safe_load(open(input_yaml))
 
     # find proper IRF name
