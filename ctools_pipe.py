@@ -54,5 +54,5 @@ if __name__ == '__main__':
                 stderr=subprocess.PIPE
             )
             # if everything goes well, the output is None
-            (result, error) = p.communicate()
+            # (result, error) = p.communicate()
 
