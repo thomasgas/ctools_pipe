@@ -46,8 +46,13 @@ if __name__ == '__main__':
 
         config_in = yaml.safe_load(open(infile))
         realizations = config_in['sim']['realizations']
-        p = subprocess.Popen(['python', 'background_sim.py', infile])
-
-        # if everything goes well, the output is None
-        (result, error) = p.communicate()
+        for counter in range(realizations):
+            print(f"process {counter} started")
+            p = subprocess.Popen(
+                ['python', 'background_sim.py', infile, str(counter + 1)],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+            # if everything goes well, the output is None
+            (result, error) = p.communicate()
 
