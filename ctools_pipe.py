@@ -3,10 +3,6 @@ import argparse
 import yaml
 import subprocess
 
-
-from background_sim import simulate_background
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Simulate some CTA Science.')
 
@@ -43,16 +39,19 @@ if __name__ == '__main__':
 
     if args.background:
         infile = args.config_file
-
         config_in = yaml.safe_load(open(infile))
         realizations = config_in['sim']['realizations']
-        for counter in range(realizations):
-            print(f"process {counter} started")
-            p = subprocess.Popen(
-                ['python', 'background_sim.py', infile, str(counter + 1)],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
-            # if everything goes well, the output is None
-            # (result, error) = p.communicate()
+
+        # launches job using local python
+        if config_in['exe']['mode'] == "local":
+            for counter in range(realizations):
+                print(f"process {counter} started")
+                p = subprocess.Popen(
+                    ['python', 'background_sim.py', infile, str(counter + 1)],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE
+                )
+                # if everything goes well, the output is None
+                # (result, error) = p.communicate()
+
 

@@ -1,17 +1,17 @@
 # check the list of available IRFs using the files in the irf_fits folder
-
+# the job has to be submitted to the right farm/pc/whatever
 IRF:
   prod:
     number: 3b
-    version: 1
+    version: 1      # 0, 1 or 2
   zenith: 20
   site: North
   time: '30m'       # 0.5h is valid only for prod3-v2. otherwise use 30m
   pointing: average
   subarray: LST      # only for prod3b: LST/MST/SST/MSTSST/FULL/TS
-  TS: 0              #  only for prod3b: 1 (yes), 0 (no)
+  TS: 0              # only for prod3b: 1 (yes), 0 (no)
 sim:
-  realizations: 20
+  realizations: 4
   radius: 5          # in degrees
   time:
     t_min: 0 s
@@ -21,4 +21,4 @@ sim:
     e_max: 10 TeV
 exe:
  path: "/home/thomas/Documenti/ctools_pipe/back_sim/"
- mode: local
+ mode: local        # local, Trieste, LAPP
