@@ -9,7 +9,6 @@ import numpy as np
 import astropy.units as u
 from environs import Env
 
-
 def simulate_background(input_yaml, count):
     config_in = yaml.safe_load(open(input_yaml))
 
@@ -23,14 +22,31 @@ def simulate_background(input_yaml, count):
         caldb = f'prod{irf.prod_number}-v{irf.prod_version}'
 
     # output file
+    env = Env()
     out_path = config_in['exe']['path']
-    if not out_path.endswith("/"):
-        out_path += "/"
 
+    # try just to interpret the env variable (removing the dollar)
+    # if it's $VAR/folder then split 
+    if out_path.startswith("$"):
+        out_path = out_path[1:] 
+        try:
+            out_path = env(out_path)
+        except:
+            env_var = out_path.split('/', 1)[0]
+            folders = out_path.split('/', 1)[1]
+            out_path = env(env_var) + '/' + folders
+
+    if out_path.endswith("/"):   # just used to remove backslash if applied
+        out_path = out_path[:-1]
+
+    print("out_path")
+    if not os.path.exists(out_path):
+        os.makedirs(out_path)
+    
     # simulation details
     sim_details = config_in['sim']
 
-    seed = np.random.randint(1000)
+    seed = np.random.randint(10000)
 
     # do the simulation
     sim = ctools.ctobssim()
