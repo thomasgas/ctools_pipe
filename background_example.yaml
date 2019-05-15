@@ -20,5 +20,5 @@ sim:
     e_min: 30 GeV
     e_max: 10 TeV
 exe:
- path: "/home/thomas/Documenti/ctools_pipe/back_sim/"
+ path: /home/thomas/Documenti/ctools_pipe/back_sim/ # or use a previously exported $ENV_VAR
  mode: local        # local, Trieste, LAPP
