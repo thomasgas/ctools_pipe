@@ -2,6 +2,7 @@ import sys
 import argparse
 import yaml
 import subprocess
+from utils import create_path
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Simulate some CTA Science.')
