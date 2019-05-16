@@ -60,14 +60,14 @@ if __name__ == '__main__':
         elif execution['mode'] == "bsub":
             details = execution['details']
             exec_string = "bsub "
-            if details['queue']['name']  != "N/A":
-                exec_string+=f"-q {details['queue']['name']} "
+            if details['queue']['name'] != "N/A":
+                exec_string += f"-q {details['queue']['name']} "
             if details['queue']['flags'] != "N/A":
-                exec_string+=f"{details['queue']['flags']} "
+                exec_string += f"{details['queue']['flags']} "
             if details['mail'] != "N/A":
-                exec_string+=f"-u {details['mail']} "
+                exec_string += f"-u {details['mail']} "
             if execution['others'] != "N/A":
-                exec_string+=execution['others']
+                exec_string += execution['others']
             
             print(exec_string)
             for counter in range(realizations):
