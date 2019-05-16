@@ -3,6 +3,7 @@ import argparse
 import yaml
 import subprocess
 from utils import create_path
+from environs import Env
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Simulate some CTA Science.')
@@ -92,10 +93,18 @@ if __name__ == '__main__':
 
             conda_path = create_path(config_in['exe']['conda']['conda_path'])
 
-            for counter in range(realizations):
+            env = Env()
 
+            for counter in range(realizations):
                 script_name = f"launch_{str(counter).zfill(3)}.sh"
                 file_out = open(folder_launch + script_name, "w")
+
+                # need to export also the env variables, if they are used
+                if config_in['exe']['path'].startswith("$"):
+                    env_folder_name = config_in['exe']['path'][1:].split('/', 1)[0]
+                    evaluate_folder = env(env_folder_name)
+                    file_out.write(f"export {env_folder_name}={evaluate_folder}'\n")
+
                 file_out.write(f"export PATH='{conda_path}/bin:$PATH'\n")
                 file_out.write(f"export PATH='{conda_path}/lib:$PATH'\n")
                 file_out.write(f"export PYTHON_EGG_CACHE='/lapp_data/cta/gasparetto/python_cache'\n")
