@@ -28,5 +28,6 @@ exe:
     mail: thomas.gasparetto@ts.infn.it # No mail --> write N/A
     output: out_err                    # No output --> write N/A
     flags: aeb                         # when to receive e-mail: ( a: abort, e: end, b: begin )
+    queue: flash                       # used for testing at LAPP
   mode: qsub
   others: N/A                          # bsub strings. will be appended before the string "python"
