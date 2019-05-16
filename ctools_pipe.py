@@ -60,7 +60,10 @@ if __name__ == '__main__':
                     print(result, error)
         elif execution['mode'] == "bsub":
             details = execution['details']
-            exec_string = "bsub "
+
+            # create string for jobs submission
+            exec_string = f"{execution['mode']} "
+
             if details['queue']['name'] != "N/A":
                 exec_string += f"-q {details['queue']['name']} "
             if details['queue']['flags'] != "N/A":
@@ -68,7 +71,7 @@ if __name__ == '__main__':
             if details['mail'] != "N/A":
                 exec_string += f"-u {details['mail']} "
             if execution['others'] != "N/A":
-                exec_string += execution['others']
+                exec_string += f"{execution['others']} "
             
             print(exec_string)
             for counter in range(realizations):
@@ -77,9 +80,45 @@ if __name__ == '__main__':
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.PIPE
                                      )
-                
+                # print stderr ad stdout for first job
                 if counter == 0 and execution['debug'] == "yes":
                     (result, error) = p.communicate()
                     print(result, error)
+
+        elif execution['mode'] == "qsub":
+            details = execution['details']
+            # create scripts to lunch on a folder
+            folder_launch = create_path(f"{config_in['exe']['path']}/tmp/scripts")
+
+            conda_path = create_path(config_in['exe']['conda']['conda_path'])
+
+            for counter in range(realizations):
+
+                script_name = f"launch_{str(counter).zfill(3)}.sh"
+                file_out = open(folder_launch + script_name, "w")
+                file_out.write(f"export PATH='{conda_path}/bin:$PATH'\n")
+                file_out.write(f"export PATH='{conda_path}/lib:$PATH'\n")
+                file_out.write(f"export PYTHON_EGG_CACHE='/lapp_data/cta/gasparetto/python_cache'\n")
+                file_out.write(f"source activate {config_in['exe']['conda']['env_name']}\n")
+                file_out.write(f'python background_sim.py {infile} {str(counter + 1)} \n')
+                file_out.write('source deactivate\n')
+                file_out.close()
+
+                exec_string = f"{execution['mode']} -V -j oe "
+                if details['output'] != "N/A":
+                    exec_string += f"-o {details['output']} "
+                if details['mail'] != "N/A":
+                    exec_string += f"-M {details['mail']} "
+                if details['flags'] != "N/A":
+                    exec_string += f"-m {details['flags']} "
+                if execution['others'] != "N/A":
+                    exec_string += f"{execution['others']} "
+
+                exec_string += f"{file_out}"
+                p = subprocess.Popen(exec_string.split(" "),
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.PIPE
+                                     )
+
 
 
