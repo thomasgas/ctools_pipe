@@ -97,13 +97,14 @@ if __name__ == '__main__':
 
             for counter in range(realizations):
                 script_name = f"launch_{str(counter).zfill(3)}.sh"
-                file_out = open(folder_launch + script_name, "w")
+                out_file_name = folder_launch + script_name
+                file_out = open(out_file_name, "w")
 
                 # need to export also the env variables, if they are used
                 if config_in['exe']['path'].startswith("$"):
                     env_folder_name = config_in['exe']['path'][1:].split('/', 1)[0]
                     evaluate_folder = env(env_folder_name)
-                    file_out.write(f"export {env_folder_name}={evaluate_folder}'\n")
+                    file_out.write(f"export {env_folder_name}='{evaluate_folder}'\n")
 
                 file_out.write(f"export PATH='{conda_path}/bin:$PATH'\n")
                 file_out.write(f"export PATH='{conda_path}/lib:$PATH'\n")
@@ -123,11 +124,14 @@ if __name__ == '__main__':
                 if execution['others'] != "N/A":
                     exec_string += f"{execution['others']} "
 
-                exec_string += f"{file_out}"
+                exec_string += f"{out_file_name}"
+                print(exec_string)
                 p = subprocess.Popen(exec_string.split(" "),
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.PIPE
                                      )
+                #(result, error) = p.communicate()
+                #print(result, error)
 
 
 
