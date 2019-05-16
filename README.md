@@ -1,6 +1,12 @@
 # ctools_pipe
 Pipelines for GRB/GW simulations task
 
+### package needed (on top of ctools environment) 
+#### (this will soon be changed with a setup.py file)
+- yaml: `pip install PyYAML`
+- astropy: `pip install astropy`
+- environs: `pip install environs`
+
 The scripts are developed and tested inside a ctools Anaconda environment in order ot use gammalib/ctools functionalities. I personally advise to use the Anaconda package. It can be also easily used in a job submitting system (such as LSF or others), provided that the right path are given. This set of scripts is built in order to handle this correctly.
 
 ### what's inside
