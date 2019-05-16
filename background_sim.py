@@ -9,6 +9,7 @@ import numpy as np
 import astropy.units as u
 from environs import Env
 
+
 def simulate_background(input_yaml, count):
     config_in = yaml.safe_load(open(input_yaml))
 
@@ -42,11 +43,11 @@ def simulate_background(input_yaml, count):
     print("out_path")
     if not os.path.exists(out_path):
         os.makedirs(out_path)
-    
+
     # simulation details
     sim_details = config_in['sim']
 
-    seed = np.random.randint(10000)
+    seed = count*10
 
     # do the simulation
     sim = ctools.ctobssim()

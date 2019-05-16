@@ -51,7 +51,10 @@ if __name__ == '__main__':
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE
                 )
-                #if everything goes well, the output is None
-                #(result, error) = p.communicate()
+                # if everything goes well, the output is None
+                # check this just for the first job
+                if counter == 0:
+                    (result, error) = p.communicate()
+                    print(result, error)
 
 
