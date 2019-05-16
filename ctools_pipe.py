@@ -41,9 +41,10 @@ if __name__ == '__main__':
         infile = args.config_file
         config_in = yaml.safe_load(open(infile))
         realizations = config_in['sim']['realizations']
+        execution = config_in['exe']
 
         # launches job using local python
-        if config_in['exe']['mode'] == "local":
+        if execution['mode'] == "local":
             for counter in range(realizations):
                 print(f"process {counter} started")
                 p = subprocess.Popen(
@@ -54,6 +55,29 @@ if __name__ == '__main__':
                 # if everything goes well, the output is None
                 # check this just for the first job
                 if counter == 0:
+                    (result, error) = p.communicate()
+                    print(result, error)
+        elif execution['mode'] == "bsub":
+            details = execution['details']
+            exec_string = "bsub "
+            if details['queue']['name']  != "N/A":
+                exec_string+=f"-q {details['queue']['name']} "
+            if details['queue']['flags'] != "N/A":
+                exec_string+=f"{details['queue']['flags']} "
+            if details['mail'] != "N/A":
+                exec_string+=f"-u {details['mail']} "
+            if execution['others'] != "N/A":
+                exec_string+=execution['others']
+            
+            print(exec_string)
+            for counter in range(realizations):
+                p = subprocess.Popen([*exec_string.split(" "),
+                                      "python", "background_sim.py", infile, str(counter + 1)],
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.PIPE
+                                     )
+                
+                if counter == 0 and execution['debug'] == "yes":
                     (result, error) = p.communicate()
                     print(result, error)
 

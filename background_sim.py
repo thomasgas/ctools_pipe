@@ -40,14 +40,13 @@ def simulate_background(input_yaml, count):
     if out_path.endswith("/"):   # just used to remove backslash if applied
         out_path = out_path[:-1]
 
-    print("out_path")
     if not os.path.exists(out_path):
         os.makedirs(out_path)
 
     # simulation details
     sim_details = config_in['sim']
 
-    seed = count*10
+    seed = int(count)*10
 
     # do the simulation
     sim = ctools.ctobssim()
