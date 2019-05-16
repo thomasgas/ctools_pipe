@@ -21,9 +21,12 @@ sim:
     e_max: 10 TeV
 exe:
   path: $BACK_FOLDER/z_20
+  debug: no                            # activated with "yes" --> stdout&stderr just from first job
   conda:
     conda_path: /lapp_data/cta/gasparetto/miniconda3
     env_name: ctools_p3
+  software_path: $CTOOLS_PIPE
+  caldb: /lapp_data/cta/gasparetto/miniconda3/envs/ctools_p3/share/caldb
   details:
     mail: thomas.gasparetto@ts.infn.it # No mail --> write N/A
     output: out_err                    # No output --> write N/A

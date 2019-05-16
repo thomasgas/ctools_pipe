@@ -13,8 +13,10 @@ from utils import create_path
 def simulate_background(input_yaml, count):
     config_in = yaml.safe_load(open(input_yaml))
 
+    ctools_pipe_path=create_path(config_in['exe']['software_path'])
+
     # find proper IRF name
-    irf = IRFPicker(config_in)
+    irf = IRFPicker(config_in, ctools_pipe_path)
     name_irf = irf.irf_pick()
 
     if irf.prod_version == "3b" and irf.prod_number == 0:
@@ -31,7 +33,7 @@ def simulate_background(input_yaml, count):
 
     # do the simulation
     sim = ctools.ctobssim()
-    sim['inmodel'] = "models/bkg_only_model.xml"
+    sim['inmodel'] = f"{ctools_pipe_path}/models/bkg_only_model.xml"
     sim['caldb'] = caldb
     sim['irf'] = name_irf
     sim['ra'] = 0

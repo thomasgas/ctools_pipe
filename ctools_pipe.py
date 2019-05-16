@@ -92,31 +92,36 @@ if __name__ == '__main__':
             folder_launch = create_path(f"{config_in['exe']['path']}/tmp/scripts")
 
             conda_path = create_path(config_in['exe']['conda']['conda_path'])
-
             env = Env()
-
             for counter in range(realizations):
                 script_name = f"launch_{str(counter).zfill(3)}.sh"
-                out_file_name = folder_launch + script_name
+                out_file_name = folder_launch + "/" + script_name
                 file_out = open(out_file_name, "w")
 
                 # need to export also the env variables, if they are used
                 if config_in['exe']['path'].startswith("$"):
                     env_folder_name = config_in['exe']['path'][1:].split('/', 1)[0]
                     evaluate_folder = env(env_folder_name)
-                    file_out.write(f"export {env_folder_name}='{evaluate_folder}'\n")
+                    file_out.write(f'export {env_folder_name}="{evaluate_folder}"\n')
 
-                file_out.write(f"export PATH='{conda_path}/bin:$PATH'\n")
-                file_out.write(f"export PATH='{conda_path}/lib:$PATH'\n")
-                file_out.write(f"export PYTHON_EGG_CACHE='/lapp_data/cta/gasparetto/python_cache'\n")
-                file_out.write(f"source activate {config_in['exe']['conda']['env_name']}\n")
-                file_out.write(f'python background_sim.py {infile} {str(counter + 1)} \n')
+                ctools_pipe_path=create_path(config_in['exe']['software_path'])
+                env_name = config_in['exe']['conda']['env_name']
+                caldb_path = create_path(config_in['exe']['caldb'])
+
+                file_out.write(f'export CALDB="{caldb_path}"\n')
+                file_out.write(f'export PATH="{conda_path}/bin:$PATH"\n')
+                file_out.write(f'export PATH="{conda_path}/lib:$PATH"\n')
+                file_out.write(f'export PYTHON_EGG_CACHE="/lapp_data/cta/gasparetto/python_cache"\n')
+                file_out.write(f'source activate {env_name}\n')
+                file_out.write(f'python {ctools_pipe_path}/background_sim.py {ctools_pipe_path}/{infile} {str(counter + 1)} \n')
                 file_out.write('source deactivate\n')
                 file_out.close()
 
                 exec_string = f"{execution['mode']} -V -j oe "
                 if details['output'] != "N/A":
                     exec_string += f"-o {details['output']} "
+                if details['queue'] != "N/A":
+                    exec_string += f"-q {details['queue']} "
                 if details['mail'] != "N/A":
                     exec_string += f"-M {details['mail']} "
                 if details['flags'] != "N/A":
@@ -130,8 +135,7 @@ if __name__ == '__main__':
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.PIPE
                                      )
-                #(result, error) = p.communicate()
-                #print(result, error)
-
-
-
+                # print stderr ad stdout for first job
+                if counter == 0 and execution['debug'] == "yes":
+                    (result, error) = p.communicate()
+                    print(result, error)

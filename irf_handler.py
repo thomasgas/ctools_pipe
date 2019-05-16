@@ -2,9 +2,8 @@ from astropy.table import Table
 import sys
 import yaml
 
-
 class IRFPicker:
-    def __init__(self, irf_container):
+    def __init__(self, irf_container, root_folder):
         """
         Load informations. Dictionary created from yaml file: see example.
         :param irf_container: dictionary to choose IRF name
@@ -19,6 +18,7 @@ class IRFPicker:
         self.irf_pointing = self.irf_info['pointing']
         self.irf_subarray = self.irf_info['subarray']
         self.TS = str(self.irf_info['TS'])
+        self._root_folder = root_folder
 
     def irf_pick(self):
         """
@@ -28,7 +28,7 @@ class IRFPicker:
         :return: the irf fits table
         """
         if self.prod_number == "3b" and self.prod_version == 2:
-            irf_table = Table.read("irf_fits/prod3b-v2.fits")
+            irf_table = Table.read(f"{self._root_folder}/irf_fits/prod3b-v2.fits")
             irf = irf_table[
                 (irf_table['site'] == self.irf_site) &
                 (irf_table['zenith'] == self.zenith) &
@@ -37,7 +37,7 @@ class IRFPicker:
             ]['name']
 
         elif self.prod_number == "3b" and self.prod_version == 1:
-            irf_table = Table.read("irf_fits/prod3b-v1.fits")
+            irf_table = Table.read(f"{self._root_folder}/irf_fits/prod3b-v1.fits")
             irf = irf_table[
                 (irf_table['site'] == self.irf_site) &
                 (irf_table['pointing'] == self.irf_pointing) &
@@ -46,7 +46,7 @@ class IRFPicker:
             ]['name']
 
         elif self.prod_number == "3b" and self.prod_version == 0:
-            irf_table = Table.read("irf_fits/prod3b.fits")
+            irf_table = Table.read(f"{self._root_folder}/irf_fits/prod3b.fits")
             irf = irf_table[
                 (irf_table['site'] == self.irf_site) &
                 (irf_table['pointing'] == self.irf_pointing) &
