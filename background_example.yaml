@@ -1,5 +1,4 @@
 # check the list of available IRFs using the files in the irf_fits folder
-# the job has to be submitted to the right farm/pc/whatever
 IRF:
   prod:
     number: 3b
@@ -19,6 +18,3 @@ sim:
   energy:
     e_min: 30 GeV
     e_max: 10 TeV
-exe:
- path: /home/thomas/Documenti/ctools_pipe/back_sim/ # or use a previously exported $ENV_VAR
- mode: local        # local, Trieste, LAPP

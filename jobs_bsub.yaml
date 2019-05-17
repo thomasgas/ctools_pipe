@@ -1,0 +1,10 @@
+exe:
+  path: $BACK_FOLDER/z_20
+  debug: yes                            # first job will have the output on screen. type 'yes' to activate.
+  mode: bsub                           # local, bsub, qsub
+  details:
+    queue:
+      name: normal                     # CNAF: cta, TRIESTE: normal/bigmem (if more memory is needed), N/A if use default
+      flags: N/A                       # CNAF: -app run_1h (short jobs), -app run_24h (standard job), N/A if no flag needed
+    mail: thomas.gasparetto@ts.infn.it # No output to mail --> write N/A
+  others: N/A                          # bsub strings. will be appended before the string "python"

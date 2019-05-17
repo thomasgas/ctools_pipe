@@ -1,0 +1,3 @@
+exe:
+ path: /home/thomas/Documenti/ctools_pipe/back_sim/ # or use a previously exported $ENV_VAR
+ mode: local        # local, Trieste, LAPP
