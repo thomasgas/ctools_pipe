@@ -1,5 +1,4 @@
 # check the list of available IRFs using the files in the irf_fits folder
-# the job has to be submitted to the right farm/pc/whatever
 IRF:
   prod:
     number: 3b
@@ -19,18 +18,3 @@ sim:
   energy:
     e_min: 30 GeV
     e_max: 10 TeV
-exe:
-  path: $BACK_FOLDER/z_20
-  debug: no                            # activated with "yes" --> stdout&stderr just from first job
-  conda:
-    conda_path: $CONDA_PATH
-    env_name: ctools_p3
-  software_path: $CTOOLS_PIPE
-  caldb: $CALDB
-  details:
-    mail: thomas.gasparetto@ts.infn.it # No mail --> write N/A
-    output: out_err                    # No output --> write N/A
-    flags: aeb                         # when to receive e-mail: ( a: abort, e: end, b: begin )
-    queue: flash                       # used for testing at LAPP
-  mode: qsub
-  others: N/A                          # bsub strings. will be appended before the string "python"

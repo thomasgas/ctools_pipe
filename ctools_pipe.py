@@ -6,25 +6,36 @@ from utils import create_path
 from environs import Env
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Simulate some CTA Science.')
+    parser = argparse.ArgumentParser(
+        prog="python ctools_pipe.py",
+        description='Simulate some CTA Science.',
+    )
 
-    parser.add_argument('-b', '--background',
-                        dest='background',
-                        action='store_const',
-                        const=sum,
-                        help='Do the simulation of the background. Need yaml input file.')
-
-    parser.add_argument('config_file',
-                        metavar='background.yaml',
+    parser.add_argument("-j",
+                        "--jobs",
+                        metavar='jobs.yaml',
                         type=str,
-                        help='yaml configuration file for background simulation')
+                        required=True,
+                        help="MANDATORY: input a jobs.yaml configuration file. ")
 
-    # add jobs scheduler: common to all scripts
+    parser.add_argument("-b",
+                        "--background",
+                        metavar='background*.yaml',
+                        type=str,
+                        required=False,
+                        help="Needs a background*.yaml configuration file.")
+
+    parser.add_argument("-m",
+                        "--models",
+                        type=str,
+                        metavar='model_input.yaml',
+                        required=False,
+                        help="Needs a model_input.yaml configuration file.")
 
     try:
         args = parser.parse_args()
     except:
-        parser.print_help()
+        # parser.print_help()
         print(" ------------------------- ")
         print("|      Need more help?    |")
         print("| gasparethomas@gmail.com |")
@@ -40,10 +51,13 @@ if __name__ == '__main__':
         sys.exit(0)
 
     if args.background:
-        infile = args.config_file
+        infile = args.background
         config_in = yaml.safe_load(open(infile))
         realizations = config_in['sim']['realizations']
-        execution = config_in['exe']
+
+        in_jobs = args.jobs
+        jobs_exe = yaml.safe_load(open(in_jobs))
+        execution = jobs_exe['exe']
 
         # launches job using local python
         if execution['mode'] == "local":
@@ -89,9 +103,9 @@ if __name__ == '__main__':
         elif execution['mode'] == "qsub":
             details = execution['details']
             # create scripts to lunch on a folder
-            folder_launch = create_path(f"{config_in['exe']['path']}/tmp/scripts")
+            folder_launch = create_path(f"{execution['path']}/tmp/scripts")
 
-            conda_path = create_path(config_in['exe']['conda']['conda_path'])
+            conda_path = create_path(execution['conda']['conda_path'])
             env = Env()
             for counter in range(realizations):
                 script_name = f"launch_{str(counter).zfill(3)}.sh"
@@ -99,14 +113,14 @@ if __name__ == '__main__':
                 file_out = open(out_file_name, "w")
 
                 # need to export also the env variables, if they are used
-                if config_in['exe']['path'].startswith("$"):
-                    env_folder_name = config_in['exe']['path'][1:].split('/', 1)[0]
+                if execution['path'].startswith("$"):
+                    env_folder_name = execution['path'][1:].split('/', 1)[0]
                     evaluate_folder = env(env_folder_name)
                     file_out.write(f'export {env_folder_name}="{evaluate_folder}"\n')
 
-                ctools_pipe_path=create_path(config_in['exe']['software_path'])
-                env_name = config_in['exe']['conda']['env_name']
-                caldb_path = create_path(config_in['exe']['caldb'])
+                ctools_pipe_path=create_path(execution['software_path'])
+                env_name = execution['conda']['env_name']
+                caldb_path = create_path(execution['caldb'])
 
                 file_out.write(f'export CALDB="{caldb_path}"\n')
                 file_out.write(f'export PATH="{conda_path}/bin:$PATH"\n')
