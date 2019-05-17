@@ -12,8 +12,10 @@ from utils import create_path
 
 def simulate_background(input_yaml, count):
     config_in = yaml.safe_load(open(input_yaml))
-
-    ctools_pipe_path=create_path(config_in['exe']['software_path'])
+    try:
+        ctools_pipe_path = create_path(config_in['exe']['software_path'])
+    except KeyError:
+        ctools_pipe_path = "."
 
     # find proper IRF name
     irf = IRFPicker(config_in, ctools_pipe_path)
