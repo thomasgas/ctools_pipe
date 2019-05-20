@@ -153,3 +153,19 @@ if __name__ == '__main__':
                 if counter == 0 and execution['debug'] == "yes":
                     (result, error) = p.communicate()
                     print(result, error)
+
+    if args.models:
+        infile = args.models
+        config_in = yaml.safe_load(open(infile))
+
+        in_jobs = args.jobs
+        jobs_exe = yaml.safe_load(open(in_jobs))
+        execution = jobs_exe['exe']
+        if execution['mode'] == "local":
+            p = subprocess.Popen(
+                ['python', 'model_creation.py', infile]
+            )
+            # if everything goes well, the output is None
+            # check this just for the first job
+            (result, error) = p.communicate()
+            print(result, error)
