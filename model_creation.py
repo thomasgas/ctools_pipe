@@ -1,10 +1,13 @@
 from astropy.io import fits
 import numpy as np
 import astropy.units as u
+from astropy.units import UnitsWarning
 import os
+import sys
 import yaml
 import glob
 import subprocess
+import warnings
 
 
 def create_txt(input_yaml):
@@ -98,7 +101,10 @@ def create_txt(input_yaml):
             header_spec = grb_test['SPECTRA'].header
             spectra = grb_test['SPECTRA'].data
 
-        flux_unit_fits = u.Unit(header_spec['UNITS'])
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', UnitsWarning)
+            flux_unit_fits = u.Unit(header_spec['UNITS'])
+
         flux_unit_ctools = u.Unit('ph / (MeV * s *cm^2)')
 
         model_title = f"{model_folder}/{grb_name}/model_{grb_name}.txt"
