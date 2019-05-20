@@ -22,6 +22,16 @@ python ctools_pipe.py -b background.yaml -j jobs*.yaml
 ```
 
 2. creation of XML models (ctools compliant) for sources with variable spectra over time. The idea is to put all the sources in the same point in space, but each of them have also a lightcurve attached, which is shaped as a squared wave so that it's zero everywhere (the source is OFF), expect for a time window in which the source is ON.
+The creation of the model have to be done **AFTER** having sourced the ctools environment because the scrit is using ctools and gammalib, that are installed inside that environment.
+```
+python ctools_pipe.py --models model_input.yaml --jobs jobs_local.yaml
+```
+or
+```
+python ctools_pipe.py -m model_input.yaml -j jobs_local.yaml
+```
+
+
 3. the simulation chain of the source. Every source realization is attached to a background which was previously simulated: this saves time when thousands of simulations have to be done.
 
 #### HELP:
