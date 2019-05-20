@@ -22,7 +22,7 @@ def create_txt(input_yaml):
     model_folder = f"{output_data}/models"
     try:
         os.mkdir(model_folder)
-    except:
+    except FileExistsError:
         print(f'{model_folder} already created')
 
     list_files = glob.glob(f"{input_data}/*fits")
@@ -59,13 +59,13 @@ def create_txt(input_yaml):
         grb_test = fits.open(f"{file_name}")
         try:
             os.mkdir(f'{model_folder}/{grb_name}')
-        except:
+        except FileExistsError:
             print(f'{grb_name} already created')
 
         try:
             os.mkdir(f'{model_folder}/{grb_name}/spectra')
             os.mkdir(f'{model_folder}/{grb_name}/lightcv')
-        except:
+        except FileExistsError:
             print(f'spectra and lightcv already created')
 
         header_prim = grb_test['PRIMARY'].header
@@ -94,7 +94,7 @@ def create_txt(input_yaml):
         try:
             header_spec = grb_test['EBL-ABS. SPECTRA'].header
             spectra = grb_test['EBL-ABS. SPECTRA'].data
-        except:
+        except KeyError:
             header_spec = grb_test['SPECTRA'].header
             spectra = grb_test['SPECTRA'].data
 
@@ -129,6 +129,7 @@ def create_txt(input_yaml):
                 source = f"{grb_name}_{counter} Point  {TS}  {RA} {DEC} 0 0 0 FUNC 1.0  {spec_name} 1.0 {fits_name} \n"
                 file.write(source)
 
+        # create XML model
         subprocess.Popen([
             "python",
             "/home/thomas/Programs/astro/sexten_2017/model_creator/scriptModel_variable.py",
