@@ -123,8 +123,8 @@ def create_txt(input_yaml):
                              time_out,
                              time_out + deltat / (2 * delta_scale)]
 
-                output.data['TIME'] = np.array(fits_time)
-                output.writeto(fits_name, overwrite=True)
+                hdul['Time Profile'].data['TIME'] = np.array(fits_time)
+                hdul.writeto(fits_name, overwrite=True)
 
                 source = f"{grb_name}_{counter} Point  {TS}  {RA} {DEC} 0 0 0 FUNC 1.0  {spec_name} 1.0 {fits_name} \n"
                 file.write(source)
