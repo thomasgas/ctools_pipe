@@ -10,7 +10,7 @@ import subprocess
 import warnings
 
 
-def create_txt(input_yaml):
+def create_models(input_yaml):
     """
     Create fits and txt files for the generation of time variable spectra
     :param input_yaml: YAML configuration file
@@ -117,7 +117,7 @@ def create_txt(input_yaml):
                 spec_name = f"{model_folder}/{grb_name}/spectra/spec_{str(counter).zfill(3)}_tin-{time_in:.2f}_tend-{time_out:.2f}.txt"
 
                 save_spectra = u.Quantity(spectra.field(counter), flux_unit_fits).to_value(flux_unit_ctools)
-                np.savetxt(spec_name, np.c_[energies, save_spectra.field(counter)], newline="\n")
+                np.savetxt(spec_name, np.c_[energies, save_spectra], newline="\n")
 
                 deltat = time_out - time_in
 
@@ -142,3 +142,6 @@ def create_txt(input_yaml):
             model_title]
         )
 
+
+if __name__ == '__main__':
+    create_models(sys.argv[1])
