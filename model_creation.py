@@ -24,7 +24,7 @@ def create_models(input_yaml, jobs_yaml):
 
     models = config_in['models']
     input_data = models['input_data']['path']
-    output_data = models['output_data']
+    output_data = jobs_in['exe']['path']
 
     model_folder = f"{output_data}/models"
     try:
