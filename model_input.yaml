@@ -7,4 +7,3 @@ models:
     path: /home/thomas/Documenti/GRB_PAPER/input
     version: 0                      # 0 is an example file sent by Lara to Franz (Event0.fits)
   output_data: /home/thomas/Documenti/GRB_PAPER
-  software_path: $CTOOLS_PIPE

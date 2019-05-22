@@ -8,15 +8,19 @@ import yaml
 import glob
 import subprocess
 import warnings
+from utils import create_path
 
 
-def create_models(input_yaml):
+def create_models(input_yaml, jobs_yaml):
     """
     Create fits and txt files for the generation of time variable spectra
     :param input_yaml: YAML configuration file
+    :param jobs_yaml: YAML configuration file for job details (software path & co)
     :return: None (data saved to disk)
     """
     config_in = yaml.safe_load(open(input_yaml))
+    jobs_in = yaml.safe_load(open(jobs_yaml))
+    ctools_pipe_path = create_path(jobs_in['exe']['software_path'])
 
     models = config_in['models']
     input_data = models['input_data']['path']
@@ -113,8 +117,8 @@ def create_models(input_yaml):
         DEC = 0
         with open(model_title, 'w') as file:
             for counter, (time_in, time_out) in enumerate(zip(times[:-1], times[1:])):
-                fits_name = f"{model_folder}/{grb_name}/lightcv/lc_{str(counter).zfill(3)}_tin-{time_in:.2f}_tend-{time_out:.2f}.fits"
-                spec_name = f"{model_folder}/{grb_name}/spectra/spec_{str(counter).zfill(3)}_tin-{time_in:.2f}_tend-{time_out:.2f}.txt"
+                fits_name = f"{model_folder}/{grb_name}/lightcv/lc_{str(counter).zfill(3)}_tin-{time_in:.3f}_tend-{time_out:.3f}.fits"
+                spec_name = f"{model_folder}/{grb_name}/spectra/spec_{str(counter).zfill(3)}_tin-{time_in:.3f}_tend-{time_out:.3f}.txt"
 
                 save_spectra = u.Quantity(spectra.field(counter), flux_unit_fits).to_value(flux_unit_ctools)
                 np.savetxt(spec_name, np.c_[energies, save_spectra], newline="\n")
@@ -138,10 +142,10 @@ def create_models(input_yaml):
         # create XML model
         subprocess.Popen([
             "python",
-            "/home/thomas/Programs/astro/sexten_2017/model_creator/scriptModel_variable.py",
+            f"{ctools_pipe_path}/scriptModel_variable.py",
             model_title]
         )
 
 
 if __name__ == '__main__':
-    create_models(sys.argv[1])
+    create_models(sys.argv[1], sys.argv[2])

@@ -1,3 +1,4 @@
 exe:
- path: /home/thomas/Documenti/ctools_pipe/back_sim/ # or use a previously exported $ENV_VAR
+ path: /home/thomas/Documenti/ctools_pipe/back_sim/z_20 # or use a previously exported $ENV_VAR
  mode: local        # local, Trieste, LAPP
+ software_path: /home/thomas/Documenti/ctools_pipe

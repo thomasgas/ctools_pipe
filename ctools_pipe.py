@@ -163,7 +163,7 @@ if __name__ == '__main__':
         execution = jobs_exe['exe']
         if execution['mode'] == "local":
             p = subprocess.Popen(
-                ['python', 'model_creation.py', infile]
+                ['python', 'model_creation.py', infile, in_jobs]
             )
             # if everything goes well, the output is None
             # check this just for the first job
