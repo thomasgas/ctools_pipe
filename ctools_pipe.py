@@ -64,7 +64,7 @@ if __name__ == '__main__':
             for counter in range(realizations):
                 print(f"process {counter} started")
                 p = subprocess.Popen(
-                    ['python', 'background_sim.py', infile, str(counter + 1)],
+                    ['python', 'background_sim.py', infile, in_jobs, str(counter + 1)],
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE
                 )
@@ -91,7 +91,7 @@ if __name__ == '__main__':
             print(exec_string)
             for counter in range(realizations):
                 p = subprocess.Popen([*exec_string.split(" "),
-                                      "python", "background_sim.py", infile, str(counter + 1)],
+                                      "python", "background_sim.py", infile, in_jobs, str(counter + 1)],
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.PIPE
                                      )
@@ -127,7 +127,7 @@ if __name__ == '__main__':
                 file_out.write(f'export PATH="{conda_path}/lib:$PATH"\n')
                 file_out.write(f'export PYTHON_EGG_CACHE="/lapp_data/cta/gasparetto/python_cache"\n')
                 file_out.write(f'source activate {env_name}\n')
-                file_out.write(f'python {ctools_pipe_path}/background_sim.py {ctools_pipe_path}/{infile} {str(counter + 1)} \n')
+                file_out.write(f'python {ctools_pipe_path}/background_sim.py {ctools_pipe_path}/{infile} {ctools_pipe_path}/{in_jobs} {str(counter + 1)} \n')
                 file_out.write('source deactivate\n')
                 file_out.close()
 

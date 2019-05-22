@@ -10,10 +10,12 @@ import astropy.units as u
 from utils import create_path
 
 
-def simulate_background(input_yaml, count):
+def simulate_background(input_yaml, jobs_yaml, count):
     config_in = yaml.safe_load(open(input_yaml))
+    jobs_config = yaml.safe_load(open(jobs_yaml))
+
     try:
-        ctools_pipe_path = create_path(config_in['exe']['software_path'])
+        ctools_pipe_path = create_path(jobs_config['exe']['software_path'])
     except KeyError:
         ctools_pipe_path = "."
 
@@ -26,7 +28,7 @@ def simulate_background(input_yaml, count):
     else:
         caldb = f'prod{irf.prod_number}-v{irf.prod_version}'
 
-    out_path = create_path(config_in['exe']['path'])
+    out_path = create_path(jobs_config['exe']['path'])
 
     # simulation details
     sim_details = config_in['sim']
@@ -51,4 +53,4 @@ def simulate_background(input_yaml, count):
 
 
 if __name__ == '__main__':
-    simulate_background(sys.argv[1], sys.argv[2])
+    simulate_background(sys.argv[1], sys.argv[2], sys.argv[3])
