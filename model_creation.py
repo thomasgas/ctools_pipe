@@ -30,7 +30,7 @@ def create_models(input_yaml, jobs_yaml):
     try:
         os.mkdir(model_folder)
     except FileExistsError:
-        print(f'{model_folder} already created')
+        print(f'{model_folder} already created. will be use for output source models')
 
     list_files = glob.glob(f"{input_data}/*fits")
 
@@ -121,6 +121,7 @@ def create_models(input_yaml, jobs_yaml):
                 spec_name = f"{model_folder}/{grb_name}/spectra/spec_{str(counter).zfill(3)}_tin-{time_in:.3f}_tend-{time_out:.3f}.txt"
 
                 save_spectra = u.Quantity(spectra.field(counter), flux_unit_fits).to_value(flux_unit_ctools)
+                save_spectra = np.clip(save_spectra, a_min=1e-200, a_max=1.0)
                 np.savetxt(spec_name, np.c_[energies, save_spectra], newline="\n")
 
                 deltat = time_out - time_in
