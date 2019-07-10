@@ -1,10 +1,7 @@
-import gammalib
 import ctools
 import sys
-import os
 import yaml
 from irf_handler import IRFPicker
-import numpy as np
 import astropy.units as u
 
 from utils import create_path

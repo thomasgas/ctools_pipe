@@ -1,4 +1,4 @@
 exe:
- path: /home/thomas/Documenti/GRB_PAPER # or use a previously exported $ENV_VAR
+ path: /home/thomas/Documenti/GRB_PAPER/back_sim # or use a previously exported $ENV_VAR
  mode: local        # local, Trieste, LAPP
  software_path: /home/thomas/Documenti/ctools_pipe
