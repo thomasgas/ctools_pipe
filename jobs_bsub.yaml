@@ -1,5 +1,5 @@
 exe:
-  path: $BACK_FOLDER
+  path: $MAIN_FOLDER/back_sim
   debug: yes                            # first job will have the output on screen. type 'yes' to activate.
   mode: bsub                           # local, bsub, qsub
   software_path: $CTOOLS_PIPE
