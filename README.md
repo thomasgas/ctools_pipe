@@ -12,7 +12,7 @@ Pipelines for GRB/GW simulations task
 
 The scripts are developed and tested inside a ctools Anaconda environment in order ot use gammalib/ctools functionalities. I personally advise to use the Anaconda package. It can be also easily used in a job submitting system (such as LSF or others), provided that the right path are given. This set of scripts is built in order to handle this correctly.
 
-**NOTE**: remember to load the IRFs in the ctools environment. Just download them from the webpage https://www.cta-observatory.org/science/cta-performance/ and unpack the FITS version inside the $CALDB folder (visible from inside the environment). Other supported IRFs are those that can be downloaded from redmine.
+**NOTE**: remember to load the IRFs in the ctools environment. Just download them from the webpage https://www.cta-observatory.org/science/cta-performance/ and **unpack the FITS version in the parent folder of the $CALDB folder** (visible from inside the environment). Other supported IRFs are those that can be downloaded from redmine.
 
 ### what's inside
 **1. simulation of background** to be saved and reused afterwards. The configuration file has to be prepared according to the job submitting system.
