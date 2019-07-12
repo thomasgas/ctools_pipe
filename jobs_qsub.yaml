@@ -7,6 +7,7 @@ exe:
     conda_path: $CONDA_PATH
     env_name: ctools_p3
   software_path: $CTOOLS_PIPE
+  python_cache: $PYTHON_EGG_CACHE
   caldb: $CALDB
   details:
     mail: thomas.gasparetto@ts.infn.it # No mail --> write N/A

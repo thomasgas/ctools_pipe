@@ -4,6 +4,7 @@ import yaml
 import subprocess
 from utils import create_path
 from environs import Env
+import glob
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -121,11 +122,12 @@ if __name__ == '__main__':
                 ctools_pipe_path=create_path(execution['software_path'])
                 env_name = execution['conda']['env_name']
                 caldb_path = create_path(execution['caldb'])
+                python_cache = create_path(execution['python_cache'])
 
                 file_out.write(f'export CALDB="{caldb_path}"\n')
                 file_out.write(f'export PATH="{conda_path}/bin:$PATH"\n')
                 file_out.write(f'export PATH="{conda_path}/lib:$PATH"\n')
-                file_out.write(f'export PYTHON_EGG_CACHE="/lapp_data/cta/gasparetto/python_cache"\n')
+                file_out.write(f'export PYTHON_EGG_CACHE="{python_cache}"\n')
                 file_out.write(f'source activate {env_name}\n')
                 file_out.write(f'python {ctools_pipe_path}/background_sim.py {ctools_pipe_path}/{infile} {ctools_pipe_path}/{in_jobs} {str(counter + 1)} \n')
                 file_out.write('source deactivate\n')
