@@ -3,9 +3,9 @@ Pipelines for GRB/GW simulations task
 
 ### package needed (on top of ctools environment) 
 #### (this will soon be changed with a setup.py file)
-- yaml: `pip install PyYAML`
-- astropy: `pip install astropy`
-- environs: `pip install environs`
+- yaml: `conda install PyYAML`
+- astropy: `conda install astropy`
+- environs: `conda install environs`
 - `wget https://raw.githubusercontent.com/HESOFTS/sexten_2017/master/model_creator/scriptModel_variable.py`
 
 ## Description
