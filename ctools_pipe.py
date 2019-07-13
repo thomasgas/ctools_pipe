@@ -108,6 +108,8 @@ if __name__ == '__main__':
 
             conda_path = create_path(execution['conda']['conda_path'])
             env = Env()
+            list_script_bash = []
+
             for counter in range(realizations):
                 script_name = f"launch_{str(counter).zfill(3)}.sh"
                 out_file_name = folder_launch + "/" + script_name
@@ -133,6 +135,9 @@ if __name__ == '__main__':
                 file_out.write('source deactivate\n')
                 file_out.close()
 
+                list_script_bash.append(out_file_name)
+
+            for file_bash in list_script_bash:
                 exec_string = f"{execution['mode']} -V -j oe "
                 if details['output'] != "N/A":
                     exec_string += f"-o {details['output']} "
@@ -145,16 +150,17 @@ if __name__ == '__main__':
                 if execution['others'] != "N/A":
                     exec_string += f"{execution['others']} "
 
-                exec_string += f"{out_file_name}"
+                exec_string += f"{file_bash}"
                 print(exec_string)
-                p = subprocess.Popen(exec_string.split(" "),
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.PIPE
-                                     )
+
+                #p = subprocess.Popen(exec_string.split(" "),
+                #                     stdout=subprocess.PIPE,
+                #                     stderr=subprocess.PIPE
+                #                     )
                 # print stderr ad stdout for first job
-                if counter == 0 and execution['debug'] == "yes":
-                    (result, error) = p.communicate()
-                    print(result, error)
+                #if counter == 0 and execution['debug'] == "yes":
+                #    (result, error) = p.communicate()
+                #    print(result, error)
 
     if args.models:
         infile = args.models
