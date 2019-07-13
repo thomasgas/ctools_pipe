@@ -44,11 +44,21 @@ python ctools_pipe.py --help
 ```
 to get the help message on how to use the script.
 
-### LAPP (MUST) usage
-- `source batch_example_lapp.sh` after having set the `LAPP_APP_SHARED` folder properly.
-- change the `variables_example.sh` properly and create your `variable.sh`.
+### LAPP (MUST) usage: READ CAREFULLY!!! 
+- change the `batch_example_lapp.sh` to your `batch_LAPP.sh` after having set the `LAPP_APP_SHARED` folder properly.
+- `source batch_LAPP.sh` in order to se the proper environmental variables
+- change the `variables_example.sh` properly and create your `variable.sh` (see a `variable_LAPP.sh` example file).
 - `source variable.sh`
 
-`batch_example_lapp.sh` and `variable.sh` have to be created once and then they just have to be sourced at the beginning of each job submission.
+`batch_LAPP.sh` and `variable.sh` have to be created once and then they just have to be sourced at the beginning of each new session.
 
-Then all the variables are set and one can proceed to lunch the jobs. The environmental variables are needed because when the job is submitted, all environmental variables are lost (if not passes) and the relative paths are also lost.
+**How to launch a job on MUST:**
+- activate the environment: `source activate ctools_p3`
+- launch command, i.e. `python ctools_pipe.py --background background.yaml --jobs jobs_qsub.yaml`. This will **NOT** launch a job but it will print on screen the string to be used for submitting the job (try with few files...you'll see). you can pipe it to a `launch_multiple.sh`, for example, like this:
+```
+python ctools_pipe.py --background background.yaml --jobs jobs_qsub.yaml > launch_multiple.sh
+```
+- EXIT from the environment: `source deactivate`
+- submit the jobs, i.e. `source launch_multiple.sh`
+
+...et voilà!!!
