@@ -1,4 +1,4 @@
 exe:
- path: $MAIN_FOLDER/back_sim # or use a previously exported $ENV_VAR
+ path: $MAIN_FOLDER/models # or use a previously exported $ENV_VAR
  mode: local        # local, Trieste, LAPP
  software_path: $CTOOLS_PIPE

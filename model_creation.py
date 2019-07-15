@@ -23,10 +23,10 @@ def create_models(input_yaml, jobs_yaml):
     ctools_pipe_path = create_path(jobs_in['exe']['software_path'])
 
     models = config_in['models']
-    input_data = models['input_data']['path']
-    output_data = jobs_in['exe']['path']
+    input_data = create_path(models['input_data']['path'])
+    output_data = create_path(jobs_in['exe']['path'])
 
-    model_folder = f"{output_data}/models"
+    model_folder = f"{output_data}"
     try:
         os.mkdir(model_folder)
     except FileExistsError:
@@ -57,7 +57,6 @@ def create_models(input_yaml, jobs_yaml):
     output.header.comments['TIMEREF'] = "Time reference."
     output.header['TUNIT1'] = 's'
 
-    # output.writeto("banana.fits")
     primary_hdu = fits.PrimaryHDU(header=hdr)
     hdul = fits.HDUList([primary_hdu, output])
 

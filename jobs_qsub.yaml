@@ -10,7 +10,7 @@ exe:
   python_cache: $PYTHON_EGG_CACHE
   caldb: $CALDB
   details:
-    mail: N/A # No mail --> write N/A
+    mail: N/A                          # No mail --> write N/A
     output: out_err                    # No output --> write N/A
     flags: aeb                         # when to receive e-mail: ( a: abort, e: end, b: begin )
     queue: flash                       # used for testing at LAPP
