@@ -189,8 +189,8 @@ if __name__ == '__main__':
 
     if args.simulation:
         # input for simulation
-        infile = args.simulation
-        config_in = yaml.safe_load(open(infile))
+        in_simu = args.simulation
+        config_in = yaml.safe_load(open(in_simu))
         ctobssim_input = config_in['ctobssim']
         realizations = ctobssim_input['realizations']
 
@@ -199,23 +199,40 @@ if __name__ == '__main__':
         fits_background_list = glob.glob(f"{backgrounds_path}/background*.fits")
 
         # load models
-        models_path = create_path(ctobssim_input['models_in'])
+        models_path = create_path(ctobssim_input['models_in']['xml_path'])
         models_list = glob.glob(f"{models_path}/*")
+        max_models = ctobssim_input['models_in']['max']
 
-        # input for jobs submisison
+        # input for jobs submission
         in_jobs = args.jobs
         jobs_exe = yaml.safe_load(open(in_jobs))
         execution = jobs_exe['exe']
 
-        # find the limiting factor between number of realizations, models and backgrounds
-        minimum = min(realizations, len(fits_background_list), len(models_list))
+        #for model in models_list:
+        #    print(glob.glob(f"{model}/*xml")[0])
 
-        if minimum > 0:
-            print(f"{minimum} simulation(s) will be done")
-        else:
-            print("Some files are missing. You have:")
-            print(f"{len(fits_background_list)} backgrounds")
-            print(f"{realizations} simulations(s) to do")
-            print(f"{len(models_list)} model(s) created")
-            print(f"...and the minimum is {minimum}")
+        if execution['mode'] == "local":
+            # print(in_simu)
+            # print(in_jobs)
+            for counter, model in enumerate(models_list[:max_models]):
+                # print("----------------------------")
+                # print(f"- model {counter} started")
+                # print(glob.glob(f"{model}/*xml")[0])
+
+                for sim in range(realizations):
+                    p = subprocess.Popen(
+                        ['python',
+                         'simulation_analysis.py',
+                         in_simu,
+                         in_jobs,
+                         glob.glob(f"{model}/*xml")[0],
+                         str(sim + 1)],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE
+                    )
+                    # if everything goes well, the output is None
+                    # check this just for the first job
+                    #if counter == 0:
+                    (result, error) = p.communicate()
+                    print(result, error)
 
