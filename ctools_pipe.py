@@ -33,6 +33,14 @@ if __name__ == '__main__':
                         required=False,
                         help="Needs a model_input.yaml configuration file.")
 
+    parser.add_argument("-s",
+                        "--simulation",
+                        type=str,
+                        metavar='simulation.yaml',
+                        required=False,
+                        help="Needs a simulation.yaml configuration file.")
+
+
     try:
         args = parser.parse_args()
     except:
@@ -163,6 +171,7 @@ if __name__ == '__main__':
                 #    print(result, error)
 
     if args.models:
+        # model creation is done only locally since it's not a heavy computation
         infile = args.models
         config_in = yaml.safe_load(open(infile))
 
@@ -177,3 +186,36 @@ if __name__ == '__main__':
             # check this just for the first job
             (result, error) = p.communicate()
             print(result, error)
+
+    if args.simulation:
+        # input for simulation
+        infile = args.simulation
+        config_in = yaml.safe_load(open(infile))
+        ctobssim_input = config_in['ctobssim']
+        realizations = ctobssim_input['realizations']
+
+        # load backgrounds
+        backgrounds_path = create_path(ctobssim_input['background_path'])
+        fits_background_list = glob.glob(f"{backgrounds_path}/background*.fits")
+
+        # load models
+        models_path = create_path(ctobssim_input['models_in'])
+        models_list = glob.glob(f"{models_path}/*")
+
+        # input for jobs submisison
+        in_jobs = args.jobs
+        jobs_exe = yaml.safe_load(open(in_jobs))
+        execution = jobs_exe['exe']
+
+        # find the limiting factor between number of realizations, models and backgrounds
+        minimum = min(realizations, len(fits_background_list), len(models_list))
+
+        if minimum > 0:
+            print(f"{minimum} simulation(s) will be done")
+        else:
+            print("Some files are missing. You have:")
+            print(f"{len(fits_background_list)} backgrounds")
+            print(f"{realizations} simulations(s) to do")
+            print(f"{len(models_list)} model(s) created")
+            print(f"...and the minimum is {minimum}")
+
