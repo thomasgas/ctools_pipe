@@ -220,12 +220,14 @@ if __name__ == '__main__':
                 # print(glob.glob(f"{model}/*xml")[0])
 
                 for sim in range(realizations):
+                    path_background_to_use = fits_background_list[sim]
                     p = subprocess.Popen(
                         ['python',
                          'simulation_analysis.py',
                          in_simu,
                          in_jobs,
                          glob.glob(f"{model}/*xml")[0],
+                         path_background_to_use,
                          str(sim + 1)],
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE
