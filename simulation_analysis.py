@@ -1,6 +1,7 @@
 import sys
-import ctools
 import gammalib
+import ctools
+import cscripts
 import yaml
 from utils import create_path
 from irf_handler import IRFPicker
@@ -17,7 +18,7 @@ def sim_select_like(sim_yaml, jobs_in, model_xml, background_fits, counter):
     :param counter:
     :return:
     """
-    #print("----------------------------")
+
     print(model_xml.split('/')[-1], counter)
 
     config_in = yaml.safe_load(open(jobs_in))
@@ -37,29 +38,21 @@ def sim_select_like(sim_yaml, jobs_in, model_xml, background_fits, counter):
 
     # loading background (this is a way of doing it without saving any file)
     # output.save("name.xml") to save the file
-    obs_def = gammalib.GObservations()
+    # obs_def = gammalib.GObservations()
 
     background_id = f"{str(int(counter) + 1).zfill(6)}"
 
-    output = gammalib.GXml()
-    level0 = gammalib.GXmlElement('observation_list title="observation library"')
-    level1 = gammalib.GXmlElement(f'observation name="name_source" id="{background_id}" instrument="CTA"')
-    level2 = gammalib.GXmlElement(f'parameter name="EventList"  file="{background_fits}"')
-    level1.append(level2)
-    level0.append(level1)
-    output.append(level0)
-
-    obs_def.read(output)
+    obs_back = gammalib.GCTAObservation(background_fits)
 
     seed = int(counter)*10
 
-    # do the simulation
+    # source simulation
     sim = ctools.ctobssim()
     sim['inmodel'] = model_xml
     sim['caldb'] = caldb
     sim['irf'] = name_irf
-    sim['ra'] = 0
-    sim['dec'] = 0
+    sim['ra'] = 0.5
+    sim['dec'] = 0.5
     sim['rad'] = ctobss_params['radius']
     sim['tmin'] = u.Quantity(ctobss_params['time']['t_min']).to_value(u.s)
     sim['tmax'] = u.Quantity(ctobss_params['time']['t_max']).to_value(u.s)
@@ -68,20 +61,52 @@ def sim_select_like(sim_yaml, jobs_in, model_xml, background_fits, counter):
     sim['seed'] = seed
     sim.run()
 
-    obs_def.append(sim.obs()[0])
+    obs = sim.obs().copy()
 
-    # for obs in obs_def:
-    #     print(obs.id(), obs.nobserved())
+    # append all background events to GRB ones ==> there's just one observation and not two
+    for event in obs_back.events():
+        obs[0].events().append(event)
 
-    select = ctools.ctselect(obs_def)
-    select['rad'] = 3
+    # delete all 70+ models from the obs def file...not needed any more
+    obs.models(gammalib.GModels())
+
+    select = ctools.ctselect(obs)
+    select['rad'] = 5
     select['tmin'] = 0
-    select['tmax'] = 50
+    select['tmax'] = 100
     select['emin'] = 0.05
     select['emax'] = 1.0
     select.run()
 
-    # print(select.obs().models())
+    onoff_sim = cscripts.csphagen(select.obs())
+    onoff_sim['inmodel'] = 'NONE'
+    onoff_sim['ebinalg'] = 'LOG'
+    onoff_sim['emin'] = 0.05
+    onoff_sim['emax'] = 1.0
+    onoff_sim['enumbins'] = 30
+    onoff_sim['coordsys'] = 'CEL'
+    onoff_sim['ra'] = 0.0
+    onoff_sim['dec'] = 0.0
+    onoff_sim['rad'] = 0.2
+    onoff_sim['bkgmethod'] = 'REFLECTED'
+    onoff_sim['use_model_bkg'] = False
+    onoff_sim['stack'] = False
+    onoff_sim.run()
+
+    # CSPHAGEN creates a "Dummy" source: here I create a mock model of the GRB to be used in ctlike
+    onoff_sim.obs().models()[0].name('GRB')
+    expplaw = gammalib.GModelSpectralExpPlaw()
+    expplaw['Prefactor'].value(onoff_sim.obs().models()[0]['Prefactor'].value())
+    expplaw['Index'].value(onoff_sim.obs().models()[0]['Index'].value())
+    expplaw['PivotEnergy'].value(onoff_sim.obs().models()[0]['PivotEnergy'].value())
+    expplaw['CutoffEnergy'].value(1.e6)
+    onoff_sim.obs().models()[0].spectral(expplaw)
+
+    like = ctools.ctlike(onoff_sim.obs())
+    like.run()
+
+    # TODO: extract likelihood informations
+
 
 if __name__ == '__main__':
 

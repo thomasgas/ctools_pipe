@@ -208,17 +208,10 @@ if __name__ == '__main__':
         jobs_exe = yaml.safe_load(open(in_jobs))
         execution = jobs_exe['exe']
 
-        #for model in models_list:
-        #    print(glob.glob(f"{model}/*xml")[0])
-
         if execution['mode'] == "local":
-            # print(in_simu)
-            # print(in_jobs)
+            # loop over the models
             for counter, model in enumerate(models_list[:max_models]):
-                # print("----------------------------")
-                # print(f"- model {counter} started")
-                # print(glob.glob(f"{model}/*xml")[0])
-
+                # loop over the realizations for each model
                 for sim in range(realizations):
                     path_background_to_use = fits_background_list[sim]
                     p = subprocess.Popen(
@@ -234,7 +227,7 @@ if __name__ == '__main__':
                     )
                     # if everything goes well, the output is None
                     # check this just for the first job
-                    #if counter == 0:
-                    (result, error) = p.communicate()
-                    print(result, error)
+                    if counter == 0:
+                        (result, error) = p.communicate()
+                        print(result, error)
 
