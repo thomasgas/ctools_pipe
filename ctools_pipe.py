@@ -238,4 +238,40 @@ if __name__ == '__main__':
                     if counter == 0 and sim == 0:
                         (result, error) = p.communicate()
                         print(result, error)
+        elif execution['mode'] == "bsub":
+            details = execution['details']
 
+            # create string for jobs submission
+            exec_string = f"{execution['mode']} "
+
+            if details['queue']['name'] != "N/A":
+                exec_string += f"-q {details['queue']['name']} "
+            if details['queue']['flags'] != "N/A":
+                exec_string += f"{details['queue']['flags']} "
+            if details['mail'] != "N/A":
+                exec_string += f"-u {details['mail']} "
+            if execution['others'] != "N/A":
+                exec_string += f"{execution['others']} "
+
+            print(exec_string)
+            # loop over the models
+            for counter, model in enumerate(models_list[:max_models]):
+                # loop over the realizations for each model
+                for sim in range(realizations):
+                    path_background_to_use = fits_background_list[sim]
+                    p = subprocess.Popen(
+                        [*exec_string.split(" "),
+                         "python",
+                         'simulation_analysis.py',
+                         in_simu,
+                         in_jobs,
+                         glob.glob(f"{model}/*xml")[0],
+                         path_background_to_use,
+                         str(sim + 1)],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE
+                    )
+                    # print stderr ad stdout for first job
+                    if execution['debug'] == "yes" and counter == 0 and sim == 0:
+                        (result, error) = p.communicate()
+                        print(result, error)
