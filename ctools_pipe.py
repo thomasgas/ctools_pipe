@@ -275,3 +275,61 @@ if __name__ == '__main__':
                     if execution['debug'] == "yes" and counter == 0 and sim == 0:
                         (result, error) = p.communicate()
                         print(result, error)
+
+        elif execution['mode'] == "qsub":
+            details = execution['details']
+            # create scripts to lunch on a folder
+            folder_launch = create_path(f"{execution['path']}/tmp/sim/scripts")
+
+            conda_path = create_path(execution['conda']['conda_path'])
+            env = Env()
+            list_script_bash = []
+            # loop over all the models
+            for model in models_list[:max_models]:
+                # loop over the realizations for each model
+                for sim in range(realizations):
+                    model_to_out = glob.glob(f"{model}/*xml")[0]
+
+                    path_background_to_use = fits_background_list[sim]
+
+                    script_name = f"sim_launch_{model}_{str(sim).zfill(3)}.sh"
+                    out_file_name = folder_launch + "/" + script_name
+                    file_out = open(out_file_name, "w")
+
+                    # need to export also the env variables, if they are used
+                    if execution['path'].startswith("$"):
+                        env_folder_name = execution['path'][1:].split('/', 1)[0]
+                        evaluate_folder = env(env_folder_name)
+                        file_out.write(f'export {env_folder_name}="{evaluate_folder}"\n')
+
+                    ctools_pipe_path=create_path(execution['software_path'])
+                    env_name = execution['conda']['env_name']
+                    caldb_path = create_path(execution['caldb'])
+                    python_cache = create_path(execution['python_cache'])
+
+                    file_out.write(f'export CALDB="{caldb_path}"\n')
+                    file_out.write(f'export PATH="{conda_path}/bin:$PATH"\n')
+                    file_out.write(f'export PATH="{conda_path}/lib:$PATH"\n')
+                    file_out.write(f'export PYTHON_EGG_CACHE="{python_cache}"\n')
+                    file_out.write(f'source activate {env_name}\n')
+                    file_out.write(f'python {ctools_pipe_path}/simulation_analysis.py {ctools_pipe_path}/{in_simu} {ctools_pipe_path}/{in_jobs} {model_to_out} {path_background_to_use} {str(sim + 1)} \n')
+                    file_out.write('source deactivate\n')
+                    file_out.close()
+
+                    list_script_bash.append(out_file_name)
+
+            for file_bash in list_script_bash:
+                exec_string = f"{execution['mode']} -V -j oe "
+                if details['output'] != "N/A":
+                    exec_string += f"-o {details['output']} "
+                if details['queue'] != "N/A":
+                    exec_string += f"-q {details['queue']} "
+                if details['mail'] != "N/A":
+                    exec_string += f"-M {details['mail']} "
+                if details['flags'] != "N/A":
+                    exec_string += f"-m {details['flags']} "
+                if execution['others'] != "N/A":
+                    exec_string += f"{execution['others']} "
+
+                exec_string += f"{file_bash}"
+                print(exec_string)
