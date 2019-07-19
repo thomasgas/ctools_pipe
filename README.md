@@ -62,3 +62,37 @@ python ctools_pipe.py --background background.yaml --jobs jobs_qsub.yaml > launc
 - submit the jobs, i.e. `source launch_multiple.sh`
 
 ...et voilà!!!
+
+
+### Simulation folder structure
+    .
+    └── $MAIN_FOLDER                        # This is created from the variable_*.sh file
+        ├── back_sim                        # One folder per each IRF (N IRF here).
+        |   ├── IRF1                        # i.e.: North_z20_30m
+        |   |   ├── background_1_1.fits
+        |   |   ├── ...        
+        |   |   └── background_M_1.fits     # M files per each IRF
+        |   ├── IRF2                        # i.e.: North_z40_30m
+        |   |   ├── background_1_2.fits
+        |   |   ├── ...        
+        |   |   └── background_M_2.fits        
+        |   ├── ...  
+        |   └── IRFN                        # i.e.: South_z20_30m
+        |       ├── background_1_N.fits
+        |       ├── ...        
+        |       └── background_M_N.fits    
+        ├── input                           # input of the model creation. THIS HAS TO BE CREATED BY-HAND 
+        |   ├── GRB_1.fits
+        |   ├── ...
+        |   └── GRB_X.fits                        
+        ├── models                          # output of the model creation 
+        |   ├── GRB_1
+        |   |   ├── ...
+        |   |   └── model_GRB_1.xml         # XML model for ctools for GRB_1
+        |   ├── ...
+        |   └── GRB_X.fits                        
+        |       ├── ...
+        |       └── model_GRB_X.xml         # XML model for ctools for GRB_X
+        └── results
+
+
