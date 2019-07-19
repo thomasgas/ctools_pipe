@@ -114,7 +114,7 @@ if __name__ == '__main__':
         elif execution['mode'] == "qsub":
             details = execution['details']
             # create scripts to lunch on a folder
-            folder_launch = create_path(f"{execution['path']}/tmp/scripts")
+            folder_launch = create_path(f"{execution['path']}/tmp/back/scripts")
 
             conda_path = create_path(execution['conda']['conda_path'])
             env = Env()
