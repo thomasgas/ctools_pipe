@@ -25,12 +25,12 @@ def simulate_background(input_yaml, jobs_yaml, count):
     else:
         caldb = f'prod{irf.prod_number}-v{irf.prod_version}'
 
-    out_path = create_path(jobs_config['exe']['path'])
+    out_path = create_path(jobs_config['exe']['path'] + '/back_sim/' + name_irf)
 
     # simulation details
     sim_details = config_in['sim']
 
-    seed = int(count)*10
+    seed = int(count) * 10
 
     # do the simulation
     sim = ctools.ctobssim()

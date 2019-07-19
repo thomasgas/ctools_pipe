@@ -26,13 +26,13 @@ def create_models(input_yaml, jobs_yaml):
     input_data = create_path(models['input_data']['path'])
     output_data = create_path(jobs_in['exe']['path'])
 
-    model_folder = f"{output_data}"
+    model_folder = f"{output_data}/models"
     try:
         os.mkdir(model_folder)
     except FileExistsError:
         print(f'{model_folder} already created. will be use for output source models')
 
-    list_files = glob.glob(f"{input_data}/*fits")
+    list_files = glob.glob(f"{input_data}/input/*fits")
 
     # create example fits
     time_vals = np.zeros(4)

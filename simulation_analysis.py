@@ -36,10 +36,6 @@ def sim_select_like(sim_yaml, jobs_in, model_xml, background_fits, counter):
     else:
         caldb = f'prod{irf.prod_number}-v{irf.prod_version}'
 
-    # loading background (this is a way of doing it without saving any file)
-    # output.save("name.xml") to save the file
-    # obs_def = gammalib.GObservations()
-
     background_id = f"{str(int(counter) + 1).zfill(6)}"
 
     obs_back = gammalib.GCTAObservation(background_fits)

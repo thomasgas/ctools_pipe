@@ -1,7 +1,7 @@
 # the job has to be submitted to the right farm/pc/whatever
 
 exe:
-  path: $MAIN_FOLDER/back_sim
+  path: $MAIN_FOLDER
   debug: no                            # activated with "yes" --> stdout&stderr just from first job
   conda:
     conda_path: $CONDA_PATH

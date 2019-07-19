@@ -5,6 +5,8 @@ import subprocess
 from utils import create_path
 from environs import Env
 import glob
+from irf_handler import IRFPicker
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -194,10 +196,6 @@ if __name__ == '__main__':
         ctobssim_input = config_in['ctobssim']
         realizations = ctobssim_input['realizations']
 
-        # load backgrounds
-        backgrounds_path = create_path(ctobssim_input['background_path'])
-        fits_background_list = glob.glob(f"{backgrounds_path}/background*.fits")
-
         # load models
         models_path = create_path(ctobssim_input['models_in']['xml_path'])
         models_list = glob.glob(f"{models_path}/*")
@@ -207,6 +205,16 @@ if __name__ == '__main__':
         in_jobs = args.jobs
         jobs_exe = yaml.safe_load(open(in_jobs))
         execution = jobs_exe['exe']
+
+        ctools_pipe_path = create_path(jobs_exe['exe']['software_path'])
+
+        # select IRF to choose the proper background folder
+        irf = IRFPicker(config_in, ctools_pipe_path)
+        name_irf = irf.irf_pick()
+
+        # load backgrounds
+        backgrounds_path = create_path(ctobssim_input['background_path'])
+        fits_background_list = glob.glob(f"{backgrounds_path}/{name_irf}/background*.fits")
 
         if execution['mode'] == "local":
             # loop over the models
@@ -227,7 +235,7 @@ if __name__ == '__main__':
                     )
                     # if everything goes well, the output is None
                     # check this just for the first job
-                    if counter == 0:
+                    if counter == 0 and sim == 0:
                         (result, error) = p.communicate()
                         print(result, error)
 
