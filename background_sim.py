@@ -20,7 +20,7 @@ def simulate_background(input_yaml, jobs_yaml, count):
     irf = IRFPicker(config_in, ctools_pipe_path)
     name_irf = irf.irf_pick()
 
-    if irf.prod_version == "3b" and irf.prod_number == 0:
+    if irf.prod_number == "3b" and irf.prod_version == 0:
         caldb = "prod3b"
     else:
         caldb = f'prod{irf.prod_number}-v{irf.prod_version}'

@@ -8,11 +8,11 @@ from irf_handler import IRFPicker
 import astropy.units as u
 
 
-def sim_select_like(sim_yaml, jobs_in, model_xml, background_fits, counter):
+def grb_simulation(sim_in, config_in, model_xml, background_fits, counter):
     """
 
-    :param sim_yaml:
-    :param jobs_in:
+    :param sim_in:
+    :param config_in:
     :param model_xml:
     :param background_fits:
     :param counter:
@@ -21,17 +21,15 @@ def sim_select_like(sim_yaml, jobs_in, model_xml, background_fits, counter):
 
     print(model_xml.split('/')[-1], counter)
 
-    config_in = yaml.safe_load(open(jobs_in))
     ctools_pipe_path = create_path(config_in['exe']['software_path'])
 
-    sim_in = yaml.safe_load(open(sim_yaml))
     ctobss_params = sim_in['ctobssim']
 
     # find proper IRF name
     irf = IRFPicker(sim_in, ctools_pipe_path)
     name_irf = irf.irf_pick()
 
-    if irf.prod_version == "3b" and irf.prod_number == 0:
+    if irf.prod_number == "3b" and irf.prod_version == 0:
         caldb = "prod3b"
     else:
         caldb = f'prod{irf.prod_number}-v{irf.prod_version}'
@@ -106,4 +104,11 @@ def sim_select_like(sim_yaml, jobs_in, model_xml, background_fits, counter):
 
 if __name__ == '__main__':
 
-    sim_select_like(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+    sim_yaml_file = yaml.safe_load(open(sys.argv[1]))
+    jobs_yaml_file = yaml.safe_load(open(sys.argv[2]))
+
+    if sim_yaml_file['source']['type'] == "GRB":
+        grb_simulation(sim_yaml_file, jobs_yaml_file, sys.argv[3], sys.argv[4], sys.argv[5])
+    elif sim_yaml_file['source']['type'] == "GW":
+        gw_simulation(sim_yaml_file, jobs_yaml_file, sys.argv[3], sys.argv[4], sys.argv[5])
+
