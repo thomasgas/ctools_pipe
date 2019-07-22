@@ -14,6 +14,8 @@ IRF:
   pointing: average
   subarray: LST                        # only for prod3b: LST/MST/SST/MSTSST/FULL/TS
   TS: 0                                # only for prod3b: 1 (yes), 0 (no)
+source:
+  type: GRB                            # can be GW or GRB
 ctobssim:
   realizations: 3                      # per each model
   background_path: $MAIN_FOLDER/back_sim
