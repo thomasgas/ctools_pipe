@@ -2,7 +2,9 @@
 # It's not that memory computing intensive and save some work.
 
 models:
-  type: GRB
+  type: GRB                         # can be GW or GRB
   input_data:
     path: $MAIN_FOLDER
     version: 0                      # 0 is an example file sent by Lara to Franz (Event0.fits)
+  max_models: null                  # type null if all models have to be processed
+  overwrite: no                     # yes --> re-create models. no --> keep already created models

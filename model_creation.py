@@ -32,7 +32,8 @@ def create_models(input_yaml, jobs_yaml):
     except FileExistsError:
         print(f'{model_folder} already created. will be use for output source models')
 
-    list_files = glob.glob(f"{input_data}/input/*fits")
+    max_models = models['max_models']
+    list_files = glob.glob(f"{input_data}/input/*fits")[:max_models]
 
     # create example fits
     time_vals = np.zeros(4)
@@ -61,48 +62,56 @@ def create_models(input_yaml, jobs_yaml):
     hdul = fits.HDUList([primary_hdu, output])
 
     for file_name in list_files:
-        grb_name = file_name.split('/')[-1][:-5]
-        grb_test = fits.open(f"{file_name}")
+        src_name = file_name.split('/')[-1][:-5]
+        src_input = fits.open(f"{file_name}")
         try:
-            os.mkdir(f'{model_folder}/{grb_name}')
+            os.mkdir(f'{model_folder}/{src_name}')
+            print(f'Creating {src_name}')
         except FileExistsError:
-            print(f'{grb_name} already created')
+            if models['overwrite'] is True:
+                print(f'Overwriting {src_name}')
+            elif models['overwrite'] is False:
+                print(f'Skipping {src_name}')
+                continue
 
         try:
-            os.mkdir(f'{model_folder}/{grb_name}/spectra')
-            os.mkdir(f'{model_folder}/{grb_name}/lightcv')
+            os.mkdir(f'{model_folder}/{src_name}/spectra')
+            os.mkdir(f'{model_folder}/{src_name}/lightcv')
         except FileExistsError:
             print(f'spectra and lightcv already created')
 
-        header_prim = grb_test['PRIMARY'].header
+        header_prim = src_input['PRIMARY'].header
 
-        header_en = grb_test['ENERGIES'].header
+        header_en = src_input['ENERGIES'].header
 
         # energies (with proper units)
         energy_unit_fits = u.Unit(header_en['TUNIT1'])
         energy_unit_ctools = u.MeV
         energies = u.Quantity(
-            grb_test['ENERGIES'].data['Energies'],
+            src_input['ENERGIES'].data['Energies'],
             energy_unit_fits
         ).to_value(energy_unit_ctools)
 
         # times (with proper units)
-        header_time = grb_test['TIMES'].header
+        header_time = src_input['TIMES'].header
         time_unit_fits = u.Unit(header_time['TUNIT1'])
         time_unit_ctools = u.s
         times = u.Quantity(
-            grb_test['TIMES'].data['Times'],
+            src_input['TIMES'].data['Times'],
             time_unit_fits
         ).to_value(time_unit_ctools)
 
-        # spectra: try to use EBL absorbed spectra (GRB-like)...otherwise use unabsorbed (more GW-like)
         # Units will be added during the loop otherwise it's too slow
-        try:
-            header_spec = grb_test['EBL-ABS. SPECTRA'].header
-            spectra = grb_test['EBL-ABS. SPECTRA'].data
-        except KeyError:
-            header_spec = grb_test['SPECTRA'].header
-            spectra = grb_test['SPECTRA'].data
+        # GRB need to spectra absorbed with EBL...GW are closer to us so no EBL is absorption is needed
+        if models['type'] == "GRB":
+            header_spec = src_input['EBL-ABS. SPECTRA'].header
+            spectra = src_input['EBL-ABS. SPECTRA'].data
+        elif models['type'] == "GW":
+            header_spec = src_input['SPECTRA'].header
+            spectra = src_input['SPECTRA'].data
+        else:
+            print(f"{models['type']} is a wrong input type...")
+            sys.exit()
 
         with warnings.catch_warnings():
             warnings.simplefilter('ignore', UnitsWarning)
@@ -110,14 +119,14 @@ def create_models(input_yaml, jobs_yaml):
 
         flux_unit_ctools = u.Unit('ph / (MeV * s *cm^2)')
 
-        model_title = f"{model_folder}/{grb_name}/model_{grb_name}.txt"
+        model_title = f"{model_folder}/{src_name}/model_{src_name}.txt"
         TS = 1
         RA = 0
         DEC = 0
         with open(model_title, 'w') as file:
             for counter, (time_in, time_out) in enumerate(zip(times[:-1], times[1:])):
-                fits_name = f"{model_folder}/{grb_name}/lightcv/lc_{str(counter).zfill(3)}_tin-{time_in:.3f}_tend-{time_out:.3f}.fits"
-                spec_name = f"{model_folder}/{grb_name}/spectra/spec_{str(counter).zfill(3)}_tin-{time_in:.3f}_tend-{time_out:.3f}.txt"
+                fits_name = f"{model_folder}/{src_name}/lightcv/lc_{str(counter).zfill(3)}_tin-{time_in:.3f}_tend-{time_out:.3f}.fits"
+                spec_name = f"{model_folder}/{src_name}/spectra/spec_{str(counter).zfill(3)}_tin-{time_in:.3f}_tend-{time_out:.3f}.txt"
 
                 save_spectra = u.Quantity(spectra.field(counter), flux_unit_fits).to_value(flux_unit_ctools)
                 save_spectra = np.clip(save_spectra, a_min=1e-200, a_max=1.0)
@@ -136,7 +145,7 @@ def create_models(input_yaml, jobs_yaml):
                 hdul['Time Profile'].data['TIME'] = np.array(fits_time)
                 hdul.writeto(fits_name, overwrite=True)
 
-                source = f"{grb_name}_{counter} Point  {TS}  {RA} {DEC} 0 0 0 FUNC 1.0  {spec_name} 1.0 {fits_name} \n"
+                source = f"{src_name}_{counter} Point  {TS}  {RA} {DEC} 0 0 0 FUNC 1.0  {spec_name} 1.0 {fits_name} \n"
                 file.write(source)
 
         # create XML model
