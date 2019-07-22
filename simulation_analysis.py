@@ -111,4 +111,3 @@ if __name__ == '__main__':
         grb_simulation(sim_yaml_file, jobs_yaml_file, sys.argv[3], sys.argv[4], sys.argv[5])
     elif sim_yaml_file['source']['type'] == "GW":
         gw_simulation(sim_yaml_file, jobs_yaml_file, sys.argv[3], sys.argv[4], sys.argv[5])
-
