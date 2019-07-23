@@ -128,7 +128,11 @@ def create_models(input_yaml, jobs_yaml):
                 fits_name = f"{model_folder}/{src_name}/lightcv/lc_{str(counter).zfill(3)}_tin-{time_in:.3f}_tend-{time_out:.3f}.fits"
                 spec_name = f"{model_folder}/{src_name}/spectra/spec_{str(counter).zfill(3)}_tin-{time_in:.3f}_tend-{time_out:.3f}.txt"
 
-                save_spectra = u.Quantity(spectra.field(counter), flux_unit_fits).to_value(flux_unit_ctools)
+                if models['type'] == "GRB":
+                    save_spectra = u.Quantity(spectra.field(counter), flux_unit_fits).to_value(flux_unit_ctools)
+                if models['type'] == "GW":
+                    save_spectra = u.Quantity(spectra[counter], flux_unit_fits).to_value(flux_unit_ctools)
+
                 save_spectra = np.clip(save_spectra, a_min=1e-200, a_max=1.0)
                 np.savetxt(spec_name, np.c_[energies, save_spectra], newline="\n")
 
