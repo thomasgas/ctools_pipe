@@ -61,14 +61,15 @@ if __name__ == '__main__':
         print()
         sys.exit(0)
 
+    # input for jobs submission
+    in_jobs = args.jobs
+    jobs_exe = yaml.safe_load(open(in_jobs))
+    execution = jobs_exe['exe']
+
     if args.background:
         infile = args.background
         config_in = yaml.safe_load(open(infile))
         realizations = config_in['sim']['realizations']
-
-        in_jobs = args.jobs
-        jobs_exe = yaml.safe_load(open(in_jobs))
-        execution = jobs_exe['exe']
 
         # launches job using local python
         if execution['mode'] == "local":
@@ -177,9 +178,6 @@ if __name__ == '__main__':
         infile = args.models
         config_in = yaml.safe_load(open(infile))
 
-        in_jobs = args.jobs
-        jobs_exe = yaml.safe_load(open(in_jobs))
-        execution = jobs_exe['exe']
         if execution['mode'] == "local":
             p = subprocess.Popen(
                 ['python', 'model_creation.py', infile, in_jobs]
@@ -200,11 +198,6 @@ if __name__ == '__main__':
         models_path = create_path(ctobssim_input['models_in']['xml_path'])
         models_list = glob.glob(f"{models_path}/*")
         max_models = ctobssim_input['models_in']['max']
-
-        # input for jobs submission
-        in_jobs = args.jobs
-        jobs_exe = yaml.safe_load(open(in_jobs))
-        execution = jobs_exe['exe']
 
         ctools_pipe_path = create_path(jobs_exe['exe']['software_path'])
 
