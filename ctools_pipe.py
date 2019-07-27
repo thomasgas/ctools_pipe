@@ -101,10 +101,12 @@ if __name__ == '__main__':
                 exec_string += f"-u {details['mail']} "
             if execution['others'] != "N/A":
                 exec_string += f"{execution['others']} "
-            
+
             print(exec_string)
-            exec_string+="-e error.log -o output.log "
             for counter in range(realizations):
+                if counter == 0 and execution['debug'] == "yes":
+                    exec_string+="-e error.log -o output.log "
+
                 p = subprocess.Popen([*exec_string.split(" "),
                                       f"{env_path}/bin/python", "background_sim.py", infile, in_jobs, str(counter + 1)],
                                      stdout=subprocess.PIPE,
