@@ -15,18 +15,19 @@ IRF:
   subarray: LST                        # only for prod3b: LST/MST/SST/MSTSST/FULL/TS
   TS: 0                                # only for prod3b: 1 (yes), 0 (no)
 source:
-  type: GRB                            # can be GW or GRB
+  type: GW                             # can be GW or GRB
+  pointings_path: $MAIN_FOLDER/pointings
+  max_sources: 4
 ctobssim:
-  realizations: 3                      # per each model
+  realizations: 3                       # per each model
   background_path: $MAIN_FOLDER/back_sim
   models_in:
     xml_path: $MAIN_FOLDER/models
     fits_path: $MAIN_FOLDER/input
-    max: 2
   radius: 5                            # in degrees. useless to have a value larger than 5 (radius of SSTs fov)
   time:
     t_min: 0 s
-    t_max: 100 s
+    t_max: 1000 s
   energy:
     e_min: 30 GeV
     e_max: 10 TeV

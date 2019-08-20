@@ -6,6 +6,7 @@ from utils import create_path
 from environs import Env
 import glob
 from irf_handler import IRFPicker
+import pandas as pd
 
 
 if __name__ == '__main__':
@@ -99,7 +100,7 @@ if __name__ == '__main__':
                 exec_string += f"-u {details['mail']} "
             if execution['others'] != "N/A":
                 exec_string += f"{execution['others']} "
-            
+
             print(exec_string)
             for counter in range(realizations):
                 p = subprocess.Popen([*exec_string.split(" "),
@@ -197,7 +198,11 @@ if __name__ == '__main__':
         # load models
         models_path = create_path(ctobssim_input['models_in']['xml_path'])
         models_list = glob.glob(f"{models_path}/*")
-        max_models = ctobssim_input['models_in']['max']
+        if len(models_list) == 0:
+            print("No input model")
+            sys.exit()
+
+        max_models = config_in['source']['max_sources']
 
         ctools_pipe_path = create_path(jobs_exe['exe']['software_path'])
 
@@ -208,6 +213,19 @@ if __name__ == '__main__':
         # load backgrounds
         backgrounds_path = create_path(ctobssim_input['background_path'])
         fits_background_list = glob.glob(f"{backgrounds_path}/{name_irf}/background*.fits")
+        if len(fits_background_list) == 0:
+            print(f"No background for IRF {name_irf}")
+            sys.exit()
+
+        if config_in['source']['type'] == "GW":
+            point_path = create_path(config_in['source']['pointings_path'])
+            event_list = pd.read_csv(glob.glob(f"{point_path}/BNS*.txt")[0], sep=" ")
+            events = event_list[:max_models]
+            runs = events['run']
+            mergers = events['MergerID']
+            IRF_zenith = events['Mean Altitude']
+            observatory = events['Observatory']
+            opt_point_path = f"{point_path}/optimized_pointings"
 
         if execution['mode'] == "local":
             # loop over the models
@@ -221,16 +239,17 @@ if __name__ == '__main__':
                          in_simu,
                          in_jobs,
                          glob.glob(f"{model}/*xml")[0],
-                         path_background_to_use,
-                         str(sim + 1)],
+                         str(sim + 1),
+                         path_background_to_use
+                         ],
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE
                     )
                     # if everything goes well, the output is None
                     # check this just for the first job
-                    if counter == 0 and sim == 0:
-                        (result, error) = p.communicate()
-                        print(result, error)
+                    #if counter == 0 and sim == 0:
+                    (result, error) = p.communicate()
+                    print(result, error)
         elif execution['mode'] == "bsub":
             details = execution['details']
 
@@ -259,8 +278,9 @@ if __name__ == '__main__':
                          in_simu,
                          in_jobs,
                          glob.glob(f"{model}/*xml")[0],
-                         path_background_to_use,
-                         str(sim + 1)],
+                         str(sim + 1),
+                         path_background_to_use
+                         ],
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE
                     )
@@ -305,7 +325,7 @@ if __name__ == '__main__':
                     file_out.write(f'export PATH="{conda_path}/lib:$PATH"\n')
                     file_out.write(f'export PYTHON_EGG_CACHE="{python_cache}"\n')
                     file_out.write(f'source activate {env_name}\n')
-                    file_out.write(f'python {ctools_pipe_path}/simulation_analysis.py {ctools_pipe_path}/{in_simu} {ctools_pipe_path}/{in_jobs} {model_to_out} {path_background_to_use} {str(sim + 1)} \n')
+                    file_out.write(f'python {ctools_pipe_path}/simulation_analysis.py {ctools_pipe_path}/{in_simu} {ctools_pipe_path}/{in_jobs} {model_to_out}  {str(sim + 1)} {path_background_to_use} \n')
                     file_out.write('source deactivate\n')
                     file_out.close()
 
