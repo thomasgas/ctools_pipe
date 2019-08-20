@@ -3,6 +3,7 @@ exe:
   debug: yes                            # first job will have the output on screen. type 'yes' to activate.
   mode: bsub                           # local, bsub, qsub
   software_path: $CTOOLS_PIPE
+  env_path: $ENV_PATH                  # to pick the right python
   details:
     queue:
       name: normal                     # CNAF: cta, TRIESTE: normal/bigmem (if more memory is needed), N/A if use default

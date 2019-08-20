@@ -1,0 +1,12 @@
+exe:
+  path: $MAIN_FOLDER
+  debug: yes                           # first job will have the output on screen. type 'yes' to activate.
+  mode: bsub                           # local, bsub, qsub
+  software_path: $CTOOLS_PIPE
+  env_path: $ENV_PATH                  # to pick the right python
+  details:
+    queue:
+      name: cta                        # CNAF: cta, TRIESTE: normal/bigmem (if more memory is needed), N/A if use default
+      flags: -app run_1h               # CNAF: -app run_1h (short jobs), -app run_24h (standard job), N/A if no flag needed
+    mail: N/A                          # No output to mail --> write N/A
+  others: N/A                          # bsub strings. will be appended before the string "python"

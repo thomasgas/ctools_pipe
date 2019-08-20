@@ -89,6 +89,8 @@ if __name__ == '__main__':
         elif execution['mode'] == "bsub":
             details = execution['details']
 
+            env_path = create_path(execution['env_path'])
+
             # create string for jobs submission
             exec_string = f"{execution['mode']} "
 
@@ -103,8 +105,11 @@ if __name__ == '__main__':
 
             print(exec_string)
             for counter in range(realizations):
+                if counter == 0 and execution['debug'] == "yes":
+                    exec_string+="-e error.log -o output.log "
+
                 p = subprocess.Popen([*exec_string.split(" "),
-                                      "python", "background_sim.py", infile, in_jobs, str(counter + 1)],
+                                      f"{env_path}/bin/python", "background_sim.py", infile, in_jobs, str(counter + 1)],
                                      stdout=subprocess.PIPE,
                                      stderr=subprocess.PIPE
                                      )
