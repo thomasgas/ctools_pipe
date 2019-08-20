@@ -26,14 +26,29 @@ def create_models(input_yaml, jobs_yaml):
     input_data = create_path(models['input_data']['path'])
     output_data = create_path(jobs_in['exe']['path'])
 
-    model_folder = f"{output_data}/models"
+    if models['output'] is None:
+        model_folder = f"{output_data}/models"
+    else:
+        model_folder = f"{create_path(models['output'])}"
+
     try:
         os.mkdir(model_folder)
     except FileExistsError:
         print(f'{model_folder} already created. will be use for output source models')
 
     max_models = models['max_models']
-    list_files = glob.glob(f"{input_data}/input/*fits")[:max_models]
+
+    if models['type'] == "GRB":
+        list_files = glob.glob(f"{input_data}/input/*fits")[:max_models]
+    elif models['type'] == "GW":
+        list_run = models['run_gw']
+        list_merger_id = models['merger_gw']
+        list_files = [f for f in glob.glob("../GW_PAPER/input/*.fits")
+                      if (int(f.split('run')[-1][:4]) in list_run) and
+                      (int(f.split('run')[-1].split('.')[0][-4:]) in list_merger_id)]
+    else:
+        print(f"{models['type']} not supported...use 'GW' or 'GRB'")
+        sys.exit()
 
     # create example fits
     time_vals = np.zeros(4)
@@ -121,8 +136,17 @@ def create_models(input_yaml, jobs_yaml):
 
         model_title = f"{model_folder}/{src_name}/model_{src_name}.txt"
         TS = 1
-        RA = 0
-        DEC = 0
+
+        if models['pos']['ra'] is None:
+            RA = header_prim['ra']
+        else:
+            RA = models['pos']['ra']
+
+        if models['pos']['dec'] is None:
+            DEC = header_prim['dec']
+        else:
+            DEC = models['pos']['dec']
+
         with open(model_title, 'w') as file:
             for counter, (time_in, time_out) in enumerate(zip(times[:-1], times[1:])):
                 fits_name = f"{model_folder}/{src_name}/lightcv/lc_{str(counter).zfill(3)}_tin-{time_in:.3f}_tend-{time_out:.3f}.fits"
