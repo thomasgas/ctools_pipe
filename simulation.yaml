@@ -7,38 +7,35 @@
 IRF:
   prod:
     number: 3b
-    version: 1                         # 0, 1 or 2
+    version: 2                         # 0, 1 or 2
   zenith: 20
   site: North
-  time: '30m'                          # 0.5h is valid only for prod3-v2. otherwise use 30m
+  time: '0.5h'                          # 0.5h is valid only for prod3-v2. otherwise use 30m
   pointing: average
   subarray: LST                        # only for prod3b: LST/MST/SST/MSTSST/FULL/TS
   TS: 0                                # only for prod3b: 1 (yes), 0 (no)
 source:
-  type: GW                             # can be GW or GRB
+  type: GRB                             # can be GW or GRB
   pointings_path: $MAIN_FOLDER/pointings
-  max_sources: 4
+  max_sources: 1
 ctobssim:
-  realizations: 3                       # per each model
+  mode: onoff                            # onoff --> creates onoff counts; std --> standard simulation
+  realizations: 2                       # per each model
   background_path: $MAIN_FOLDER/back_sim
   models_in:
     xml_path: $MAIN_FOLDER/models
     fits_path: $MAIN_FOLDER/input
   radius: 5                            # in degrees. useless to have a value larger than 5 (radius of SSTs fov)
   time:
-    t_min: 0 s
-    t_max: 1000 s
+    t_min: 30 s
+    t_max: 120 s
   energy:
     e_min: 30 GeV
     e_max: 10 TeV
 ctselect:
-  radius_cut: 5                       # in degrees
   time_cut:
     mode: 'log'                       # this can be log or lin
-    t_min: 0 s                        # write N/A to use the same as the simulation
+    obs_mode: cumul                   # "cumul": t[0] --> t[i]. "iter": t[i] --> t[i+1], "all": t[i] --> t[j]
+    t_slices: 0                       # 0 --> keep all time interval...t_min and t_max are ignored
+    t_min: 30 s                       # write N/A to use the same as the simulation
     t_max: 100 s                      # write N/A to use the same as the simulation
-    t_slices: 10
-  energy_cut:
-    e_min: 30 GeV                     # write N/A to use the same as the simulation
-    e_max: 10 TeV                     # write N/A to use the same as the simulation
-

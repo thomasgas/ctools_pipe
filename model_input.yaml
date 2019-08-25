@@ -7,7 +7,7 @@ models:
   merger_gw: [340, 261, 70, 268]
   pos:
     ra: 0                        # value in deg. null for None: will be extracted from fits header
-    dec: 0                       # value in deg. null for None: will be extracted from fits header
+    dec: 0.5                       # value in deg. null for None: will be extracted from fits header
   input_data:
     path: $MAIN_FOLDER
     version: 0                      # 0 is an example file sent by Lara to Franz (Event0.fits)
