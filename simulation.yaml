@@ -16,11 +16,10 @@ IRF:
   TS: 0                                # only for prod3b: 1 (yes), 0 (no)
 source:
   type: GRB                             # can be GW or GRB
-  pointings_path: $MAIN_FOLDER/pointings
+  pointings_path: $MAIN_FOLDER/pointings # only for GW
   max_sources: 1
 ctobssim:
-  mode: onoff                            # onoff --> creates onoff counts; std --> standard simulation
-  realizations: 2                       # per each model
+  realizations: 1                       # per each model
   background_path: $MAIN_FOLDER/back_sim
   models_in:
     xml_path: $MAIN_FOLDER/models
@@ -35,7 +34,11 @@ ctobssim:
 ctselect:
   time_cut:
     mode: 'log'                       # this can be log or lin
-    obs_mode: cumul                   # "cumul": t[0] --> t[i]. "iter": t[i] --> t[i+1], "all": t[i] --> t[j]
-    t_slices: 0                       # 0 --> keep all time interval...t_min and t_max are ignored
+    obs_mode: iter                   # "cumul": t[0] --> t[i]. "iter": t[i] --> t[i+1], "all": t[i] --> t[j]
+    t_slices: 2                       # 0 --> keep all time interval...t_min and t_max are ignored
     t_min: 30 s                       # write N/A to use the same as the simulation
-    t_max: 100 s                      # write N/A to use the same as the simulation
+    t_max: 120 s                      # write N/A to use the same as the simulation
+ctlike:
+  mode_1: counts        # counts --> simple Li&Ma (uses gammapy Li&Ma). N/A to disable.
+  mode_2: ctlike-onoff  # ctlike-onoff --> onoff with ctools. Needs to create a input model. N/A to disable.
+  mode_3: ctlike-std    # ctlike-std --> standard ctlike. Needs to create a input model. N/A to disable.
