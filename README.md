@@ -15,8 +15,9 @@ The scripts are developed and tested inside a ctools Anaconda environment in ord
 
 **NOTE**: remember to load the IRFs in the ctools environment. Just download them from the webpage https://www.cta-observatory.org/science/cta-performance/ and **unpack the FITS version in the parent folder of the $CALDB folder** (visible from inside the environment). Other supported IRFs are those that can be downloaded from redmine.
 
-### what's inside
-**1. simulation of background** to be saved and reused afterwards. The configuration file has to be prepared according to the job submitting system.
+## What's inside
+### **1. simulation of background** 
+Simulation of background to be saved and reused afterwards. The configuration file has to be prepared according to the job submitting system.
 ```
 python ctools_pipe.py --background background.yaml --jobs jobs*.yaml
 ```
@@ -25,7 +26,8 @@ or
 python ctools_pipe.py -b background.yaml -j jobs*.yaml
 ```
 
-**2. creation of XML models** (ctools compliant) for sources with variable spectra over time. The idea is to put all the sources in the same point in space, but each of them have also a lightcurve attached, which is shaped as a squared wave so that it's zero everywhere (the source is OFF), expect for a time window in which the source is ON.
+### **2. creation of XML models** 
+Creation of models (ctools compliant) for sources with variable spectra over time. The idea is to put all the sources in the same point in space, but each of them have also a lightcurve attached, which is shaped as a squared wave so that it's zero everywhere (the source is OFF), expect for a time window in which the source is ON.
 The creation of the model have to be done **AFTER** having sourced the ctools environment because the scrit is using ctools and gammalib, that are installed inside that environment.
 ```
 python ctools_pipe.py --models model_input.yaml --jobs jobs_local.yaml
@@ -36,7 +38,25 @@ python ctools_pipe.py -m model_input.yaml -j jobs_local.yaml
 ```
 
 
-**3. the simulation of the source.** Every source realization is attached to a background which was previously simulated: this saves time when thousands of simulations have to be done.
+### **3. simulation and analysis of the source.** 
+Every source realization is attached to a background which was previously simulated: this saves time when thousands of simulations have to be done. This part performs the time selection and the detection of the source using 3 different methods: 
+
+**1) mode_1: counts**: onoff counts extracted manually: Li&Ma significance computed using gammapy.stat.significance_on_off (from [here](https://docs.gammapy.org/dev/api/gammapy.stats.significance_on_off.html)).
+
+The next two methods uses the same approach but are implemented in a slightly different way: a fit at low energy (30-80 GeV) with a Power Law is used to determine the slope, prefactor and pivot energy which are then used, together with a cutoff energy, to create input model for the likelihood over the whole energy range.
+
+**2) mode_2: ctlike-onoff**: calculates the TS with ctlike in the onoff mode
+
+**3) mode_3: ctlike-std**: calculates the TS with ctlike in the standard mode
+
+```
+python ctools_pipe.py --simulation simulation_analysis.yaml --jobs jobs*.yaml
+```
+or
+```
+python ctools_pipe.py -s simulation_analysis.yaml -j jobs*.yaml
+```
+See the `simulation_analysis.yaml` file for mode informations (time cuts, energy cuts, ...).
 
 #### HELP:
 You can always type: 
@@ -45,7 +65,7 @@ python ctools_pipe.py --help
 ```
 to get the help message on how to use the script.
 
-### LAPP (MUST) usage: READ CAREFULLY!!! 
+## LAPP (MUST) usage: READ CAREFULLY!!! 
 - change the `batch_example_lapp.sh` to your `batch_LAPP.sh` after having set the `LAPP_APP_SHARED` folder properly.
 - `source batch_LAPP.sh` in order to se the proper environmental variables
 - change the `variables_example.sh` properly and create your `variable.sh` (see a `variable_LAPP.sh` example file).
@@ -65,7 +85,7 @@ python ctools_pipe.py --background background.yaml --jobs jobs_qsub.yaml > launc
 ...et voilà!!!
 
 
-### Simulation folder structure
+## Simulation folder structure
     .
     └── $MAIN_FOLDER                        # This is created from the variable_*.sh file
         ├── back_sim                        # One folder per each IRF (N IRF here).
