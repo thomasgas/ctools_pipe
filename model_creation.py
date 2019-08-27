@@ -76,6 +76,8 @@ def create_models(input_yaml, jobs_yaml):
     primary_hdu = fits.PrimaryHDU(header=hdr)
     hdul = fits.HDUList([primary_hdu, output])
 
+    scaling = float(models['scaling'])
+
     for file_name in list_files:
         src_name = file_name.split('/')[-1][:-5]
         src_input = fits.open(f"{file_name}")
@@ -173,7 +175,7 @@ def create_models(input_yaml, jobs_yaml):
                 hdul['Time Profile'].data['TIME'] = np.array(fits_time)
                 hdul.writeto(fits_name, overwrite=True)
 
-                source = f"{src_name}_{counter} Point  {TS}  {RA} {DEC} 0 0 0 FUNC 1.0  {spec_name} 1.0 {fits_name} \n"
+                source = f"{src_name}_{counter} Point  {TS}  {RA} {DEC} 0 0 0 FUNC {scaling:.4f}  {spec_name} 1.0 {fits_name} \n"
                 file.write(source)
 
         # create XML model

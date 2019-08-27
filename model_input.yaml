@@ -5,6 +5,7 @@ models:
   type: GRB                         # can be GW or GRB
   run_gw: [16, 17,19, 19]
   merger_gw: [340, 261, 70, 268]
+  scaling: 1
   pos:
     ra: 0                        # value in deg. null for None: will be extracted from fits header
     dec: 0.5                       # value in deg. null for None: will be extracted from fits header
