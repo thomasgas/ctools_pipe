@@ -50,11 +50,11 @@ The next two methods uses the same approach but are implemented in a slightly di
 **3) mode_3: ctlike-std**: calculates the TS with ctlike in the standard mode
 
 ```
-python ctools_pipe.py --simulation simulation_analysis.yaml --jobs jobs*.yaml
+python ctools_pipe.py --simulation simulation.yaml --jobs jobs*.yaml
 ```
 or
 ```
-python ctools_pipe.py -s simulation_analysis.yaml -j jobs*.yaml
+python ctools_pipe.py -s simulation.yaml -j jobs*.yaml
 ```
 See the `simulation_analysis.yaml` file for mode informations (time cuts, energy cuts, ...).
 
