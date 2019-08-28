@@ -39,6 +39,6 @@ ctselect:
     t_min: 30 s                       # write N/A to use the same as the simulation
     t_max: 120 s                      # write N/A to use the same as the simulation
 ctlike:
-  mode_1: counts        # counts --> simple Li&Ma (uses gammapy Li&Ma). N/A to disable.
-  mode_2: ctlike-onoff  # ctlike-onoff --> onoff with ctools. Needs to create a input model. N/A to disable.
-  mode_3: ctlike-std    # ctlike-std --> standard ctlike. Needs to create a input model. N/A to disable.
+  counts: yes        # simple Li&Ma (uses gammapy Li&Ma). to disable --> no.
+  ctlike-onoff: yes  # onoff with ctools. Needs to create a input model. to disable --> no.
+  ctlike-std: yes    # standard ctlike. Needs to create a input model. to disable --> no.
