@@ -118,9 +118,9 @@ def grb_simulation(sim_in, config_in, model_xml, counter, background_fits):
     # ------------------------------------
 
     ctlike_mode = sim_in['ctlike']
-    mode_1 = ctlike_mode['mode_1']
-    mode_2 = ctlike_mode['mode_2']
-    mode_3 = ctlike_mode['mode_3']
+    mode_1 = ctlike_mode['counts']
+    mode_2 = ctlike_mode['ctlike-onoff']
+    mode_3 = ctlike_mode['ctlike-std']
 
     for t_in, t_end in zip(times_start, times_end):
         print("-----------------------------")
@@ -140,7 +140,7 @@ def grb_simulation(sim_in, config_in, model_xml, counter, background_fits):
         select_time.run()
         dict_obs_select_time['std'] = select_time.obs().copy()
 
-        if (mode_1 == "counts") or (mode_2 == "ctlike-onoff"):
+        if mode_1 or mode_2:
             onoff_time_sel = cscripts.csphagen(select_time.obs().copy())
             onoff_time_sel['inmodel'] = 'NONE'
             onoff_time_sel['ebinalg'] = 'LOG'
@@ -158,7 +158,7 @@ def grb_simulation(sim_in, config_in, model_xml, counter, background_fits):
 
             dict_obs_select_time['onoff'] = onoff_time_sel.obs().copy()
 
-            if mode_1 == "counts":
+            if mode_1:
                 on_counts = onoff_time_sel.obs()[0].on_spec().counts()
                 off_counts = onoff_time_sel.obs()[0].off_spec().counts()
                 alpha = onoff_time_sel.obs()[0].on_spec().backscal(0)
@@ -173,7 +173,7 @@ def grb_simulation(sim_in, config_in, model_xml, counter, background_fits):
 
             print(f"sigma ON/OFF: {sigma_onoff:.2f}")
 
-        if (mode_2 == "ctlike-onoff") or (mode_3 == "ctlike-std"):
+        if mode_2 or mode_3:
 
             # Low Energy PL fitting
             # to be saved in this dict
@@ -215,7 +215,7 @@ def grb_simulation(sim_in, config_in, model_xml, counter, background_fits):
             spectral_back['PivotEnergy'].value(300000)
             spectral_back['PivotEnergy'].scale(1e6)
 
-            if mode_2 == "ctlike-onoff":
+            if mode_2:
                 back_model = gammalib.GCTAModelIrfBackground()
                 back_model.instruments('CTAOnOff')
                 back_model.name('Background')
@@ -245,7 +245,7 @@ def grb_simulation(sim_in, config_in, model_xml, counter, background_fits):
                 like_pl.run()
                 dict_pl_ctlike_out['onoff'] = like_pl.obs().copy()
 
-            if mode_3 == "ctlike-std":
+            if mode_3:
                 models_ctlike_std = gammalib.GModels()
                 models_ctlike_std.append(model_src.copy())
                 back_model = gammalib.GCTAModelIrfBackground()
