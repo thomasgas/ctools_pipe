@@ -122,214 +122,228 @@ def grb_simulation(sim_in, config_in, model_xml, counter, background_fits):
     mode_2 = ctlike_mode['ctlike-onoff']
     mode_3 = ctlike_mode['ctlike-std']
 
-    for t_in, t_end in zip(times_start, times_end):
-        print("-----------------------------")
-        print(f"t_in: {t_in:.2f}, t_end: {t_end:.2f}")
+    output_path = create_path(sim_in['output'] + '/' + grb_name)
 
-        # different ctlikes (onoff or std) need different files.
-        # will be appended here and used later on for the final likelihood
-        dict_obs_select_time = {}
+    with open(f"{output_path}/GRB-{grb_name}_seed-{seed}.txt", "w") as f:
+        f.write(f"GRB,seed,time_start,time_end,sigma_lima,sqrt_TS_onoff,sqrt_TS_std\n")
+        for t_in, t_end in zip(times_start, times_end):
+            sigma_onoff = 0
+            sqrt_ts_like_onoff = 0
+            sqrt_ts_like_std = 0
+            print("-----------------------------")
+            print(f"t_in: {t_in:.2f}, t_end: {t_end:.2f}")
 
-        # perform time selection for this specific time bin
-        select_time = ctools.ctselect(obs)
-        select_time['rad'] = sim_rad
-        select_time['tmin'] = t_in
-        select_time['tmax'] = t_end
-        select_time['emin'] = sim_e_min
-        select_time['emax'] = sim_e_max
-        select_time.run()
-        dict_obs_select_time['std'] = select_time.obs().copy()
+            # different ctlikes (onoff or std) need different files.
+            # will be appended here and used later on for the final likelihood
+            dict_obs_select_time = {}
 
-        if mode_1 or mode_2:
-            onoff_time_sel = cscripts.csphagen(select_time.obs().copy())
-            onoff_time_sel['inmodel'] = 'NONE'
-            onoff_time_sel['ebinalg'] = 'LOG'
-            onoff_time_sel['emin'] = sim_e_min
-            onoff_time_sel['emax'] = sim_e_max
-            onoff_time_sel['enumbins'] = 30
-            onoff_time_sel['coordsys'] = 'CEL'
-            onoff_time_sel['ra'] = 0.0
-            onoff_time_sel['dec'] = 0.5
-            onoff_time_sel['rad'] = 0.2
-            onoff_time_sel['bkgmethod'] = 'REFLECTED'
-            onoff_time_sel['use_model_bkg'] = False
-            onoff_time_sel['stack'] = False
-            onoff_time_sel.run()
+            # perform time selection for this specific time bin
+            select_time = ctools.ctselect(obs)
+            select_time['rad'] = sim_rad
+            select_time['tmin'] = t_in
+            select_time['tmax'] = t_end
+            select_time['emin'] = sim_e_min
+            select_time['emax'] = sim_e_max
+            select_time.run()
+            dict_obs_select_time['std'] = select_time.obs().copy()
 
-            dict_obs_select_time['onoff'] = onoff_time_sel.obs().copy()
+            if mode_1 or mode_2:
+                onoff_time_sel = cscripts.csphagen(select_time.obs().copy())
+                onoff_time_sel['inmodel'] = 'NONE'
+                onoff_time_sel['ebinalg'] = 'LOG'
+                onoff_time_sel['emin'] = sim_e_min
+                onoff_time_sel['emax'] = sim_e_max
+                onoff_time_sel['enumbins'] = 30
+                onoff_time_sel['coordsys'] = 'CEL'
+                onoff_time_sel['ra'] = 0.0
+                onoff_time_sel['dec'] = 0.5
+                onoff_time_sel['rad'] = 0.2
+                onoff_time_sel['bkgmethod'] = 'REFLECTED'
+                onoff_time_sel['use_model_bkg'] = False
+                onoff_time_sel['stack'] = False
+                onoff_time_sel.run()
 
-            if mode_1:
-                on_counts = onoff_time_sel.obs()[0].on_spec().counts()
-                off_counts = onoff_time_sel.obs()[0].off_spec().counts()
-                alpha = onoff_time_sel.obs()[0].on_spec().backscal(0)
-                sigma_onoff = significance_on_off(
-                    n_on=on_counts,
-                    n_off=off_counts,
-                    alpha=alpha,
-                    method='lima'
-                )
-            else:
-                sigma_onoff = -1
+                dict_obs_select_time['onoff'] = onoff_time_sel.obs().copy()
 
-            print(f"sigma ON/OFF: {sigma_onoff:.2f}")
+                if mode_1:
+                    on_counts = onoff_time_sel.obs()[0].on_spec().counts()
+                    off_counts = onoff_time_sel.obs()[0].off_spec().counts()
+                    alpha = onoff_time_sel.obs()[0].on_spec().backscal(0)
+                    sigma_onoff = significance_on_off(
+                        n_on=on_counts,
+                        n_off=off_counts,
+                        alpha=alpha,
+                        method='lima'
+                    )
 
-        if mode_2 or mode_3:
+                # print(f"sigma ON/OFF: {sigma_onoff:.2f}")
 
-            # Low Energy PL fitting
-            # to be saved in this dict
-            dict_pl_ctlike_out = {}
+            if mode_2 or mode_3:
 
-            e_min_pl_ctlike = 0.030
-            e_max_pl_ctlike = 0.080
+                # Low Energy PL fitting
+                # to be saved in this dict
+                dict_pl_ctlike_out = {}
 
-            # simple ctobssim copy and select for ctlike-std
-            select_pl_ctlike = ctools.ctselect(select_time.copy())
-            select_pl_ctlike['rad'] = 3
-            select_pl_ctlike['tmin'] = t_in
-            select_pl_ctlike['tmax'] = t_end
-            select_pl_ctlike['emin'] = e_min_pl_ctlike
-            select_pl_ctlike['emax'] = e_max_pl_ctlike
-            select_pl_ctlike.run()
+                e_min_pl_ctlike = 0.030
+                e_max_pl_ctlike = 0.080
 
-            # create test source
-            src_dir = gammalib.GSkyDir()
-            src_dir.radec_deg(0, 0.5)
-            spatial = gammalib.GModelSpatialPointSource(src_dir)
+                # simple ctobssim copy and select for ctlike-std
+                select_pl_ctlike = ctools.ctselect(select_time.copy())
+                select_pl_ctlike['rad'] = 3
+                select_pl_ctlike['tmin'] = t_in
+                select_pl_ctlike['tmax'] = t_end
+                select_pl_ctlike['emin'] = e_min_pl_ctlike
+                select_pl_ctlike['emax'] = e_max_pl_ctlike
+                select_pl_ctlike.run()
 
-            # create and append source spectral model
-            spectral = gammalib.GModelSpectralPlaw()
-            spectral['Prefactor'].value(5.5e-16)
-            spectral['Prefactor'].scale(1e-16)
-            spectral['Index'].value(-2.6)
-            spectral['Index'].scale(-1.0)
-            spectral['PivotEnergy'].value(50000)
-            spectral['PivotEnergy'].scale(1e3)
-            model_src = gammalib.GModelSky(spatial, spectral)
-            model_src.name('PL_fit_temp')
-            model_src.tscalc(True)
+                # create test source
+                src_dir = gammalib.GSkyDir()
+                src_dir.radec_deg(0, 0.5)
+                spatial = gammalib.GModelSpatialPointSource(src_dir)
 
-            spectral_back = gammalib.GModelSpectralPlaw()
-            spectral_back['Prefactor'].value(1.0)
-            spectral_back['Prefactor'].scale(1.0)
-            spectral_back['Index'].value(0)
-            spectral_back['PivotEnergy'].value(300000)
-            spectral_back['PivotEnergy'].scale(1e6)
+                # create and append source spectral model
+                spectral = gammalib.GModelSpectralPlaw()
+                spectral['Prefactor'].value(5.5e-16)
+                spectral['Prefactor'].scale(1e-16)
+                spectral['Index'].value(-2.6)
+                spectral['Index'].scale(-1.0)
+                spectral['PivotEnergy'].value(50000)
+                spectral['PivotEnergy'].scale(1e3)
+                model_src = gammalib.GModelSky(spatial, spectral)
+                model_src.name('PL_fit_temp')
+                model_src.tscalc(True)
 
-            if mode_2:
-                back_model = gammalib.GCTAModelIrfBackground()
-                back_model.instruments('CTAOnOff')
-                back_model.name('Background')
-                back_model.spectral(spectral_back.copy())
+                spectral_back = gammalib.GModelSpectralPlaw()
+                spectral_back['Prefactor'].value(1.0)
+                spectral_back['Prefactor'].scale(1.0)
+                spectral_back['Index'].value(0)
+                spectral_back['PivotEnergy'].value(300000)
+                spectral_back['PivotEnergy'].scale(1e6)
 
-                onoff_pl_ctlike_lima = cscripts.csphagen(select_pl_ctlike.obs().copy())
-                onoff_pl_ctlike_lima['inmodel'] = 'NONE'
-                onoff_pl_ctlike_lima['ebinalg'] = 'LOG'
-                onoff_pl_ctlike_lima['emin'] = e_min_pl_ctlike
-                onoff_pl_ctlike_lima['emax'] = e_max_pl_ctlike
-                onoff_pl_ctlike_lima['enumbins'] = 30
-                onoff_pl_ctlike_lima['coordsys'] = 'CEL'
-                onoff_pl_ctlike_lima['ra'] = 0.0
-                onoff_pl_ctlike_lima['dec'] = 0.5
-                onoff_pl_ctlike_lima['rad'] = 0.2
-                onoff_pl_ctlike_lima['bkgmethod'] = 'REFLECTED'
-                onoff_pl_ctlike_lima['use_model_bkg'] = False
-                onoff_pl_ctlike_lima['stack'] = False
-                onoff_pl_ctlike_lima.run()
+                if mode_2:
+                    back_model = gammalib.GCTAModelIrfBackground()
+                    back_model.instruments('CTAOnOff')
+                    back_model.name('Background')
+                    back_model.spectral(spectral_back.copy())
 
-                onoff_pl_ctlike_lima.obs().models(gammalib.GModels())
-                onoff_pl_ctlike_lima.obs().models().append(model_src.copy())
-                onoff_pl_ctlike_lima.obs().models().append(back_model.copy())
+                    onoff_pl_ctlike_lima = cscripts.csphagen(select_pl_ctlike.obs().copy())
+                    onoff_pl_ctlike_lima['inmodel'] = 'NONE'
+                    onoff_pl_ctlike_lima['ebinalg'] = 'LOG'
+                    onoff_pl_ctlike_lima['emin'] = e_min_pl_ctlike
+                    onoff_pl_ctlike_lima['emax'] = e_max_pl_ctlike
+                    onoff_pl_ctlike_lima['enumbins'] = 30
+                    onoff_pl_ctlike_lima['coordsys'] = 'CEL'
+                    onoff_pl_ctlike_lima['ra'] = 0.0
+                    onoff_pl_ctlike_lima['dec'] = 0.5
+                    onoff_pl_ctlike_lima['rad'] = 0.2
+                    onoff_pl_ctlike_lima['bkgmethod'] = 'REFLECTED'
+                    onoff_pl_ctlike_lima['use_model_bkg'] = False
+                    onoff_pl_ctlike_lima['stack'] = False
+                    onoff_pl_ctlike_lima.run()
 
-                like_pl = ctools.ctlike(onoff_pl_ctlike_lima.obs())
-                like_pl['refit'] = True
-                like_pl.run()
-                dict_pl_ctlike_out['onoff'] = like_pl.obs().copy()
+                    onoff_pl_ctlike_lima.obs().models(gammalib.GModels())
+                    onoff_pl_ctlike_lima.obs().models().append(model_src.copy())
+                    onoff_pl_ctlike_lima.obs().models().append(back_model.copy())
 
-            if mode_3:
-                models_ctlike_std = gammalib.GModels()
-                models_ctlike_std.append(model_src.copy())
-                back_model = gammalib.GCTAModelIrfBackground()
-                back_model.instruments('CTA')
-                back_model.name('Background')
-                back_model.spectral(spectral_back.copy())
-                models_ctlike_std.append(back_model)
+                    like_pl = ctools.ctlike(onoff_pl_ctlike_lima.obs())
+                    like_pl['refit'] = True
+                    like_pl.run()
+                    dict_pl_ctlike_out['onoff'] = like_pl.obs().copy()
 
-                # save models
-                xmlmodel_PL_ctlike_std = 'test_model_PL_ctlike_std.xml'
-                models_ctlike_std.save(xmlmodel_PL_ctlike_std)
-
-                like_pl = ctools.ctlike(select_pl_ctlike.obs().copy())
-                like_pl['inmodel'] = xmlmodel_PL_ctlike_std
-                like_pl['refit'] = True
-                like_pl.run()
-                dict_pl_ctlike_out['std'] = like_pl.obs().copy()
-
-            # EXTENDED CTLIKE
-            for key in dict_obs_select_time.keys():
-                likelihood_pl_out = dict_pl_ctlike_out[key]
-                selected_data = dict_obs_select_time[key]
-
-                pref_out_pl = likelihood_pl_out.models()[0]['Prefactor'].value()
-                index_out_pl = likelihood_pl_out.models()[0]['Index'].value()
-                pivot_out_pl = likelihood_pl_out.models()[0]['PivotEnergy'].value()
-
-                expplaw = gammalib.GModelSpectralExpPlaw()
-                expplaw['Prefactor'].value(pref_out_pl)
-                expplaw['Index'].value(index_out_pl)
-                expplaw['PivotEnergy'].value(pivot_out_pl)
-                expplaw['CutoffEnergy'].value(80e3)
-
-                if key == "onoff":
-                    selected_data.models()[0].name(grb_name)
-                    selected_data.models()[0].tscalc(True)
-                    selected_data.models()[0].spectral(expplaw.copy())
-
-                    like = ctools.ctlike(selected_data)
-                    like['refit'] = True
-                    like.run()
-
-                if key == "std":
-                    models_fit_ctlike = gammalib.GModels()
-
-                    # create test source
-                    src_dir = gammalib.GSkyDir()
-                    src_dir.radec_deg(0, 0.5)
-                    spatial = gammalib.GModelSpatialPointSource(src_dir)
-
-                    # append spatial and spectral models
-                    model_src = gammalib.GModelSky(spatial, expplaw.copy())
-                    model_src.name('Source_fit')
-                    model_src.tscalc(True)
-                    models_fit_ctlike.append(model_src)
-
-                    # create and append background
+                if mode_3:
+                    models_ctlike_std = gammalib.GModels()
+                    models_ctlike_std.append(model_src.copy())
                     back_model = gammalib.GCTAModelIrfBackground()
                     back_model.instruments('CTA')
                     back_model.name('Background')
-                    spectral_back = gammalib.GModelSpectralPlaw()
-                    spectral_back['Prefactor'].value(1.0)
-                    spectral_back['Prefactor'].scale(1.0)
-                    spectral_back['Index'].value(0)
-                    spectral_back['PivotEnergy'].value(300000)
-                    spectral_back['PivotEnergy'].scale(1e6)
-                    back_model.spectral(spectral_back)
-                    models_fit_ctlike.append(back_model)
+                    back_model.spectral(spectral_back.copy())
+                    models_ctlike_std.append(back_model)
 
                     # save models
-                    input_ctlike_xml = "model_GRB_fit_ctlike_in.xml"
-                    models_fit_ctlike.save(input_ctlike_xml)
+                    xmlmodel_PL_ctlike_std = 'test_model_PL_ctlike_std.xml'
+                    models_ctlike_std.save(xmlmodel_PL_ctlike_std)
 
-                    like = ctools.ctlike(selected_data)
-                    like['inmodel'] = input_ctlike_xml
-                    like['refit'] = True
-                    like.run()
+                    like_pl = ctools.ctlike(select_pl_ctlike.obs().copy())
+                    like_pl['inmodel'] = xmlmodel_PL_ctlike_std
+                    like_pl['refit'] = True
+                    like_pl.run()
+                    dict_pl_ctlike_out['std'] = like_pl.obs().copy()
 
-                ts_like = like.obs().models()[0].ts()
-                E_cut_off = like.obs().models()[0]['CutoffEnergy'].value()
-                E_cut_off_error = like.obs().models()[0]['CutoffEnergy'].error()
+                # EXTENDED CTLIKE
+                for key in dict_obs_select_time.keys():
+                    likelihood_pl_out = dict_pl_ctlike_out[key]
+                    selected_data = dict_obs_select_time[key]
 
-                print(f"sqrt(TS) {key}: {np.sqrt(ts_like):.2f}")
-                print(f"E_cut_off {key}: {E_cut_off:.2f} +- {E_cut_off_error:.2f}")
+                    pref_out_pl = likelihood_pl_out.models()[0]['Prefactor'].value()
+                    index_out_pl = likelihood_pl_out.models()[0]['Index'].value()
+                    pivot_out_pl = likelihood_pl_out.models()[0]['PivotEnergy'].value()
+
+                    expplaw = gammalib.GModelSpectralExpPlaw()
+                    expplaw['Prefactor'].value(pref_out_pl)
+                    expplaw['Index'].value(index_out_pl)
+                    expplaw['PivotEnergy'].value(pivot_out_pl)
+                    expplaw['CutoffEnergy'].value(80e3)
+
+                    if key == "onoff":
+                        selected_data.models()[0].name(grb_name)
+                        selected_data.models()[0].tscalc(True)
+                        selected_data.models()[0].spectral(expplaw.copy())
+
+                        like = ctools.ctlike(selected_data)
+                        like['refit'] = True
+                        like.run()
+                        try:
+                            sqrt_ts_like_onoff = np.sqrt(like.obs().models()[0].ts())
+                        except RuntimeWarning:
+                            sqrt_ts_like_onoff = 0
+
+                    if key == "std":
+                        models_fit_ctlike = gammalib.GModels()
+
+                        # create test source
+                        src_dir = gammalib.GSkyDir()
+                        src_dir.radec_deg(0, 0.5)
+                        spatial = gammalib.GModelSpatialPointSource(src_dir)
+
+                        # append spatial and spectral models
+                        model_src = gammalib.GModelSky(spatial, expplaw.copy())
+                        model_src.name('Source_fit')
+                        model_src.tscalc(True)
+                        models_fit_ctlike.append(model_src)
+
+                        # create and append background
+                        back_model = gammalib.GCTAModelIrfBackground()
+                        back_model.instruments('CTA')
+                        back_model.name('Background')
+                        spectral_back = gammalib.GModelSpectralPlaw()
+                        spectral_back['Prefactor'].value(1.0)
+                        spectral_back['Prefactor'].scale(1.0)
+                        spectral_back['Index'].value(0)
+                        spectral_back['PivotEnergy'].value(300000)
+                        spectral_back['PivotEnergy'].scale(1e6)
+                        back_model.spectral(spectral_back)
+                        models_fit_ctlike.append(back_model)
+
+                        # save models
+                        input_ctlike_xml = "model_GRB_fit_ctlike_in.xml"
+                        models_fit_ctlike.save(input_ctlike_xml)
+
+                        like = ctools.ctlike(selected_data)
+                        like['inmodel'] = input_ctlike_xml
+                        like['refit'] = True
+                        like.run()
+                        try:
+                            sqrt_ts_like_std = np.sqrt(like.obs().models()[0].ts())
+                        except RuntimeWarning:
+                            sqrt_ts_like_std = 0
+
+
+                    # E_cut_off = like.obs().models()[0]['CutoffEnergy'].value()
+                    # E_cut_off_error = like.obs().models()[0]['CutoffEnergy'].error()
+
+                    # print(f"sqrt(TS) {key}: {np.sqrt(ts_like):.2f}")
+                    # print(f"E_cut_off {key}: {E_cut_off:.2f} +- {E_cut_off_error:.2f}")
+            f.write(f"{grb_name},{seed},{t_in:.2f},{t_end:.2f},{sigma_onoff:.2f},{sqrt_ts_like_onoff:.2f},{sqrt_ts_like_std:.2f}\n")
 
 
 def gw_simulation(sim_in, config_in, model_xml, counter, background_fits):

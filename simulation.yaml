@@ -42,3 +42,4 @@ ctlike:
   counts: yes        # simple Li&Ma (uses gammapy Li&Ma). to disable --> no.
   ctlike-onoff: yes  # onoff with ctools. Needs to create a input model. to disable --> no.
   ctlike-std: yes    # standard ctlike. Needs to create a input model. to disable --> no.
+output: $MAIN_FOLDER/output
