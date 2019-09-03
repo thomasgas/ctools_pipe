@@ -292,9 +292,10 @@ def grb_simulation(sim_in, config_in, model_xml, counter, background_fits):
                         like = ctools.ctlike(selected_data)
                         like['refit'] = True
                         like.run()
-                        try:
+                        ts = like.obs().models()[0].ts()
+                        if ts > 0:
                             sqrt_ts_like_onoff = np.sqrt(like.obs().models()[0].ts())
-                        except RuntimeWarning:
+                        else:
                             sqrt_ts_like_onoff = 0
 
                     if key == "std":
@@ -332,9 +333,10 @@ def grb_simulation(sim_in, config_in, model_xml, counter, background_fits):
                         like['inmodel'] = input_ctlike_xml
                         like['refit'] = True
                         like.run()
-                        try:
+                        ts = like.obs().models()[0].ts()
+                        if ts > 0:
                             sqrt_ts_like_std = np.sqrt(like.obs().models()[0].ts())
-                        except RuntimeWarning:
+                        else:
                             sqrt_ts_like_std = 0
 
 
