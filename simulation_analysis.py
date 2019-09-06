@@ -65,7 +65,7 @@ def grb_simulation(sim_in, config_in, model_xml, counter, background_fits):
     sim['seed'] = seed
     sim.run()
 
-    obs = sim.obs().copy()
+    obs = sim.obs()
 
     # append all background events to GRB ones ==> there's just one observation and not two
     for event in obs_back.events():
@@ -145,7 +145,8 @@ def grb_simulation(sim_in, config_in, model_xml, counter, background_fits):
             select_time['emin'] = sim_e_min
             select_time['emax'] = sim_e_max
             select_time.run()
-            dict_obs_select_time['std'] = select_time.obs().copy()
+            if mode_3:
+                dict_obs_select_time['std'] = select_time.obs().copy()
 
             if mode_1 or mode_2:
                 onoff_time_sel = cscripts.csphagen(select_time.obs().copy())
@@ -175,6 +176,8 @@ def grb_simulation(sim_in, config_in, model_xml, counter, background_fits):
                         alpha=alpha,
                         method='lima'
                     )
+
+                del onoff_time_sel
 
                 # print(f"sigma ON/OFF: {sigma_onoff:.2f}")
 
@@ -249,6 +252,8 @@ def grb_simulation(sim_in, config_in, model_xml, counter, background_fits):
                     like_pl['refit'] = True
                     like_pl.run()
                     dict_pl_ctlike_out['onoff'] = like_pl.obs().copy()
+                    del onoff_pl_ctlike_lima
+                    del like_pl
 
                 if mode_3:
                     models_ctlike_std = gammalib.GModels()
@@ -262,12 +267,19 @@ def grb_simulation(sim_in, config_in, model_xml, counter, background_fits):
                     # save models
                     xmlmodel_PL_ctlike_std = 'test_model_PL_ctlike_std.xml'
                     models_ctlike_std.save(xmlmodel_PL_ctlike_std)
+                    del models_ctlike_std
 
                     like_pl = ctools.ctlike(select_pl_ctlike.obs().copy())
                     like_pl['inmodel'] = xmlmodel_PL_ctlike_std
                     like_pl['refit'] = True
                     like_pl.run()
                     dict_pl_ctlike_out['std'] = like_pl.obs().copy()
+                    del like_pl
+
+                del spatial
+                del spectral
+                del model_src
+                del select_pl_ctlike
 
                 # EXTENDED CTLIKE
                 for key in dict_obs_select_time.keys():
@@ -297,6 +309,8 @@ def grb_simulation(sim_in, config_in, model_xml, counter, background_fits):
                             sqrt_ts_like_onoff = np.sqrt(like.obs().models()[0].ts())
                         else:
                             sqrt_ts_like_onoff = 0
+
+                        del like
 
                     if key == "std":
                         models_fit_ctlike = gammalib.GModels()
@@ -328,6 +342,7 @@ def grb_simulation(sim_in, config_in, model_xml, counter, background_fits):
                         # save models
                         input_ctlike_xml = "model_GRB_fit_ctlike_in.xml"
                         models_fit_ctlike.save(input_ctlike_xml)
+                        del models_fit_ctlike
 
                         like = ctools.ctlike(selected_data)
                         like['inmodel'] = input_ctlike_xml
@@ -339,13 +354,18 @@ def grb_simulation(sim_in, config_in, model_xml, counter, background_fits):
                         else:
                             sqrt_ts_like_std = 0
 
+                        del like
 
                     # E_cut_off = like.obs().models()[0]['CutoffEnergy'].value()
                     # E_cut_off_error = like.obs().models()[0]['CutoffEnergy'].error()
 
                     # print(f"sqrt(TS) {key}: {np.sqrt(ts_like):.2f}")
                     # print(f"E_cut_off {key}: {E_cut_off:.2f} +- {E_cut_off_error:.2f}")
+                del dict_pl_ctlike_out
+
             f.write(f"{grb_name},{seed},{t_in:.2f},{t_end:.2f},{sigma_onoff:.2f},{sqrt_ts_like_onoff:.2f},{sqrt_ts_like_std:.2f}\n")
+            del dict_obs_select_time
+            del select_time
 
 
 def gw_simulation(sim_in, config_in, model_xml, counter, background_fits):
