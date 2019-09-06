@@ -188,7 +188,7 @@ def grb_simulation(sim_in, config_in, model_xml, counter, background_fits):
                 e_max_pl_ctlike = 0.080
 
                 # simple ctobssim copy and select for ctlike-std
-                select_pl_ctlike = ctools.ctselect(select_time.copy())
+                select_pl_ctlike = ctools.ctselect(select_time.obs().copy())
                 select_pl_ctlike['rad'] = 3
                 select_pl_ctlike['tmin'] = t_in
                 select_pl_ctlike['tmax'] = t_end
