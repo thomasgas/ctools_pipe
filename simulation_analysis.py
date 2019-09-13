@@ -1,4 +1,5 @@
 import sys
+import os
 import gammalib
 import ctools
 import cscripts
@@ -6,6 +7,7 @@ import yaml
 from utils import create_path
 from irf_handler import IRFPicker
 import astropy.units as u
+from astropy.io import fits
 from gammapy.stats import significance_on_off
 import numpy as np
 
@@ -145,10 +147,39 @@ def grb_simulation(sim_in, config_in, model_xml, counter, background_fits):
             select_time['emin'] = sim_e_min
             select_time['emax'] = sim_e_max
             select_time.run()
+
+            if mode_1:
+                fits_temp_title = f"skymap_{seed}_{t_in:.2f}_{t_end:.2f}.fits"
+                pars_counts = ctlike_mode['pars_counts']
+                scale = float(pars_counts['scale'])
+                npix = 2*int(sim_rad/scale)
+                skymap = ctools.ctskymap(select_time.obs().copy())
+                skymap['emin'] = sim_e_min
+                skymap['emax'] = sim_e_max
+                skymap['nxpix'] = npix
+                skymap['nypix'] = npix
+                skymap['binsz'] = scale
+                skymap['proj'] = 'TAN'
+                skymap['coordsys'] = 'CEL'
+                skymap['xref'] = 0
+                skymap['yref'] = 0
+                skymap['bkgsubtract'] = 'RING'
+                skymap['roiradius'] = pars_counts['roiradius']
+                skymap['inradius'] = pars_counts['inradius']
+                skymap['outradius'] = pars_counts['outradius']
+                skymap['iterations'] = pars_counts['iterations']
+                skymap['threshold'] = pars_counts['threshold']
+                skymap['outmap'] = fits_temp_title
+                skymap.execute()
+
+                input_fits = fits.open(fits_temp_title)
+                sigma_onoff = np.nanmax(input_fits[2].data)
+                os.remove(fits_temp_title)
+
             if mode_3:
                 dict_obs_select_time['std'] = select_time.obs().copy()
 
-            if mode_1 or mode_2:
+            if mode_2:
                 onoff_time_sel = cscripts.csphagen(select_time.obs().copy())
                 onoff_time_sel['inmodel'] = 'NONE'
                 onoff_time_sel['ebinalg'] = 'LOG'
@@ -164,18 +195,7 @@ def grb_simulation(sim_in, config_in, model_xml, counter, background_fits):
                 onoff_time_sel['stack'] = False
                 onoff_time_sel.run()
 
-                dict_obs_select_time['onoff'] = onoff_time_sel.obs().copy()
-
-                if mode_1:
-                    on_counts = onoff_time_sel.obs()[0].on_spec().counts()
-                    off_counts = onoff_time_sel.obs()[0].off_spec().counts()
-                    alpha = onoff_time_sel.obs()[0].on_spec().backscal(0)
-                    sigma_onoff = significance_on_off(
-                        n_on=on_counts,
-                        n_off=off_counts,
-                        alpha=alpha,
-                        method='lima'
-                    )
+                dict_obs_select_time['onoff'] = onoff_time_sel.obs()
 
                 del onoff_time_sel
 

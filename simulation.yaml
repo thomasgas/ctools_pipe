@@ -39,7 +39,15 @@ ctselect:
     t_min: 30 s                       # write N/A to use the same as the simulation
     t_max: 120 s                      # write N/A to use the same as the simulation
 ctlike:
-  counts: yes        # simple Li&Ma (uses gammapy Li&Ma). to disable --> no.
+  counts: yes        # simple Li&Ma (uses ctskymap RING method). to disable --> no.
+  pars_counts:
+    ra_center: 0
+    scale: 0.02      # deg/pixel scale of the image
+    roiradius: 0.2
+    inradius: 0.6
+    outradius: 0.8
+    iterations: 3
+    threshold: 5
   ctlike-onoff: yes  # onoff with ctools. Needs to create a input model. to disable --> no.
   ctlike-std: yes    # standard ctlike. Needs to create a input model. to disable --> no.
 output: $MAIN_FOLDER/output
