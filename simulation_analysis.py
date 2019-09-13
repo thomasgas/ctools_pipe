@@ -173,7 +173,11 @@ def grb_simulation(sim_in, config_in, model_xml, counter, background_fits):
                 skymap.execute()
 
                 input_fits = fits.open(fits_temp_title)
-                sigma_onoff = np.nanmax(input_fits[2].data)
+                datain = input_fits[2].data
+                datain[np.isnan(datain)] = 0.0
+                datain[np.isinf(datain)] = 0.0
+
+                sigma_onoff = np.max(datain)
                 os.remove(fits_temp_title)
 
             if mode_3:
