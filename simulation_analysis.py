@@ -195,7 +195,7 @@ def grb_simulation(sim_in, config_in, model_xml, counter, background_fits):
                 onoff_time_sel['stack'] = False
                 onoff_time_sel.run()
 
-                dict_obs_select_time['onoff'] = onoff_time_sel.obs()
+                dict_obs_select_time['onoff'] = onoff_time_sel.obs().copy()
 
                 del onoff_time_sel
 
