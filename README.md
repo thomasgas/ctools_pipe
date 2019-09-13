@@ -41,7 +41,8 @@ python ctools_pipe.py -m model_input.yaml -j jobs_local.yaml
 ### **3. simulation and analysis of the source.** 
 Every source realization is attached to a background which was previously simulated: this saves time when thousands of simulations have to be done. This part performs the time selection and the detection of the source using 3 different methods: 
 
-**1) mode_1: counts**: onoff counts extracted manually: Li&Ma significance computed using gammapy.stat.significance_on_off (from [here](https://docs.gammapy.org/dev/api/gammapy.stats.significance_on_off.html)).
+**1) mode_1: counts**: ~~onoff counts extracted manually: Li&Ma significance computed using gammapy.stat.significance_on_off (from [here](https://docs.gammapy.org/dev/api/gammapy.stats.significance_on_off.html)).~~
+Use ctskymap to get a significance sky map from which we can take the maximum/value at the position of the source to get the significance directly.
 
 The next two methods uses the same approach but are implemented in a slightly different way: a fit at low energy (30-80 GeV) with a Power Law is used to determine the slope, prefactor and pivot energy which are then used, together with a cutoff energy, to create input model for the likelihood over the whole energy range.
 
