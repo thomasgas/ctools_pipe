@@ -10,39 +10,56 @@ import astropy.units as u
 from astropy.io import fits
 from gammapy.stats import significance_on_off
 import numpy as np
+import glob
 
 
-def grb_simulation(sim_in, config_in, model_xml, counter, background_fits):
+def grb_simulation(sim_in, config_in, model_xml, counter):
     """
-
-    :param sim_in:
-    :param config_in:
-    :param model_xml:
-    :param background_fits:
-    :param counter:
+    Function to handle the GRB simulation.
+    :param sim_in: the yaml file for the simulation (unpacked as a dict of dicts)
+    :param config_in: the yaml file for the job handling (unpacked as a dict of dicts)
+    :param model_xml: the XML model name for the source under analysis
+    :param counter: integer number. counts the id of the source realization
     :return:
     """
 
     grb_name = model_xml.split('/')[-1].split('_')[1][:-4]
-
     print(grb_name, counter)
 
     ctools_pipe_path = create_path(config_in['exe']['software_path'])
-
     ctobss_params = sim_in['ctobssim']
 
-    # find proper IRF name
-    irf = IRFPicker(sim_in, ctools_pipe_path)
-    name_irf = irf.irf_pick()
+    # choose between AUTO mode (use visibility) and MANUAL mode (manually insert IRF)
+    simulation_mode = sim_in['IRF']['mode']
 
-    if irf.prod_number == "3b" and irf.prod_version == 0:
-        caldb = "prod3b"
+    if simulation_mode == "auto":
+        print("using visibility to get IRFs")
+    elif simulation_mode == "manual":
+        print("manual picking IRF")
+
+        # find proper IRF name
+        irf = IRFPicker(sim_in, ctools_pipe_path)
+        name_irf = irf.irf_pick()
+
+        if irf.prod_number == "3b" and irf.prod_version == 0:
+            caldb = "prod3b"
+        else:
+            caldb = f'prod{irf.prod_number}-v{irf.prod_version}'
+
+        backgrounds_path = create_path(ctobss_params['bckgrnd_path'])
+        fits_background_list = glob.glob(
+            f"{backgrounds_path}/{irf.prod_number}_{irf.prod_version}_{name_irf}/background*.fits")
+
+        if len(fits_background_list) == 0:
+            print(f"No background for IRF {name_irf}")
+            sys.exit()
+
+        background_fits = fits_background_list[int(counter) - 1]
+        obs_back = gammalib.GCTAObservation(background_fits)
+
     else:
-        caldb = f'prod{irf.prod_number}-v{irf.prod_version}'
-
-    background_id = f"{str(int(counter) + 1).zfill(6)}"
-
-    obs_back = gammalib.GCTAObservation(background_fits)
+        print(f"wrong input for IRF - mode. Input is {simulation_mode}. Use 'auto' or 'manual' instead")
+        sys.exit()
 
     seed = int(counter)*10
 
@@ -68,6 +85,17 @@ def grb_simulation(sim_in, config_in, model_xml, counter, background_fits):
     sim.run()
 
     obs = sim.obs()
+
+    # # move the source photons from closer to (RA,DEC)=(0,0), where the background is located
+    # for event in obs[0].events():
+    #     # ra_evt = event.dir().dir().ra()
+    #     dec_evt = event.dir().dir().dec()
+    #     ra_evt_deg = event.dir().dir().ra_deg()
+    #     dec_evt_deg = event.dir().dir().dec_deg()
+    #
+    #     ra_corrected = (ra_evt_deg - ra_pointing)*np.cos(dec_evt)
+    #     dec_corrected = dec_evt_deg - dec_pointing
+    #     event.dir().dir().radec_deg(ra_corrected, dec_corrected)
 
     # append all background events to GRB ones ==> there's just one observation and not two
     for event in obs_back.events():
@@ -411,8 +439,12 @@ if __name__ == '__main__':
 
     sim_yaml_file = yaml.safe_load(open(sys.argv[1]))
     jobs_yaml_file = yaml.safe_load(open(sys.argv[2]))
+    model_input = sys.argv[3]
+    realization_id = sys.argv[4]
 
     if sim_yaml_file['source']['type'] == "GRB":
-        grb_simulation(sim_yaml_file, jobs_yaml_file, sys.argv[3], sys.argv[4], sys.argv[5])
+        # grb_simulation(sim_yaml_file, jobs_yaml_file, model_input, realization_id, sys.argv[5])
+        grb_simulation(sim_yaml_file, jobs_yaml_file, model_input, realization_id)
     elif sim_yaml_file['source']['type'] == "GW":
-        gw_simulation(sim_yaml_file, jobs_yaml_file, sys.argv[3], sys.argv[4], sys.argv[5])
+        print("WIP")
+        # gw_simulation(sim_yaml_file, jobs_yaml_file, sys.argv[3], sys.argv[4], sys.argv[5])

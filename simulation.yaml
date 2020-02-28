@@ -4,27 +4,28 @@
 # It will crash if the folders that are given as inputs for the data are found to be empty
 
 
-IRF:
-  prod:
-    number: 3b
-    version: 2                         # 0, 1 or 2
-  zenith: 20
+IRF:                                  # asterisc: mandatory  both for manual and auto
+  mode: manual                          # * auto --> use visibility condition; manual --> handpick che
+  prod:                               # * this is needed in any case. different MC prod --> different results
+    number: 3b                        # *
+    version: 2                        # * 0, 1 or 2
   site: North
-  time: '0.5h'                          # 0.5h is valid only for prod3-v2. otherwise use 30m
-  pointing: average
-  subarray: LST                        # only for prod3b: LST/MST/SST/MSTSST/FULL/TS
-  TS: 0                                # only for prod3b: 1 (yes), 0 (no)
+  time: '0.5h'                        # * 0.5h is valid only for prod3-v2. otherwise use 30m
+  subarray: LST                       # * only for prod3b: LST/MST/SST/MSTSST/FULL/TS
+  TS: 0                               # * only for prod3b: 1 (yes), 0 (no). THRESHOLD ARRAY
+  zenith: 20                          # only for manual mode
+  pointing: average                   # only for manual mode
 source:
-  type: GRB                             # can be GW or GRB
+  type: GRB                           # can be GW or GRB
   pointings_path: $MAIN_FOLDER/pointings # only for GW
-  max_sources: 1
+  max_sources: 1                      # for testing: limits the number of simulations to do
 ctobssim:
-  realizations: 1                       # per each model
-  background_path: $MAIN_FOLDER/back_sim
+  realizations: 3                     # simulations to be done per each model
+  bckgrnd_path: $MAIN_FOLDER/back_sim # where the background simulations stored: MANDATORY for GRB simulations
   models_in:
-    xml_path: $MAIN_FOLDER/models
-    fits_path: $MAIN_FOLDER/input
-  radius: 5                            # in degrees. useless to have a value larger than 5 (radius of SSTs fov)
+    xml_path: $MAIN_FOLDER/models     # input folder for the FITS files
+    fits_path: $MAIN_FOLDER/input     # output folder wih XML files for ctools
+  radius: 5                           # in degrees. useless to have a value larger than 5 (radius of SSTs fov)
   time:
     t_min: 30 s
     t_max: 120 s
@@ -33,21 +34,21 @@ ctobssim:
     e_max: 10 TeV
 ctselect:
   time_cut:
-    mode: 'log'                       # this can be log or lin
-    obs_mode: iter                   # "cumul": t[0] --> t[i]. "iter": t[i] --> t[i+1], "all": t[i] --> t[j]
+    mode: 'log'                       # this can be log (logarithmic spacing) or lin (linear spacing)
+    obs_mode: iter                    # "cumul": t[0] --> t[i]. "iter": t[i] --> t[i+1], "all": t[i] --> t[j]
     t_slices: 2                       # 0 --> keep all time interval...t_min and t_max are ignored
     t_min: 30 s                       # write N/A to use the same as the simulation
     t_max: 120 s                      # write N/A to use the same as the simulation
 ctlike:
-  counts: yes        # simple Li&Ma (uses ctskymap RING method). to disable --> no.
-  pars_counts:
+  counts: yes                         # simple Li&Ma (uses ctskymap RING method). to disable --> no.
+  pars_counts:                        # input parameters (see ctools documentation)
     ra_center: 0
-    scale: 0.02      # deg/pixel scale of the image
+    scale: 0.02                       # deg/pixel scale of the image
     roiradius: 0.2
     inradius: 0.6
     outradius: 0.8
     iterations: 3
     threshold: 5
-  ctlike-onoff: yes  # onoff with ctools. Needs to create a input model. to disable --> no.
-  ctlike-std: yes    # standard ctlike. Needs to create a input model. to disable --> no.
-output: $MAIN_FOLDER/output
+  ctlike-onoff: no                  # onoff with ctools. Needs to create a input model. to disable --> no.
+  ctlike-std: no                     # standard ctlike. Needs to create a input model. to disable --> no.
+output: $MAIN_FOLDER/output           # output folder for the results of the simulations

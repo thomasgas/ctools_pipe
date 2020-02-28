@@ -212,15 +212,15 @@ if __name__ == '__main__':
         ctools_pipe_path = create_path(jobs_exe['exe']['software_path'])
 
         # select IRF to choose the proper background folder
-        irf = IRFPicker(config_in, ctools_pipe_path)
-        name_irf = irf.irf_pick()
+        # irf = IRFPicker(config_in, ctools_pipe_path)
+        # name_irf = irf.irf_pick()
 
         # load backgrounds
-        backgrounds_path = create_path(ctobssim_input['background_path'])
-        fits_background_list = glob.glob(f"{backgrounds_path}/{name_irf}/background*.fits")
-        if len(fits_background_list) == 0:
-            print(f"No background for IRF {name_irf}")
-            sys.exit()
+        # backgrounds_path = create_path(ctobssim_input['bckgrnd_path'])
+        # fits_background_list = glob.glob(f"{backgrounds_path}/{name_irf}/background*.fits")
+        # if len(fits_background_list) == 0:
+        #     print(f"No background for IRF {name_irf}")
+        #     sys.exit()
 
         if config_in['source']['type'] == "GW":
             point_path = create_path(config_in['source']['pointings_path'])
@@ -237,15 +237,15 @@ if __name__ == '__main__':
             for counter, model in enumerate(models_list[:max_models]):
                 # loop over the realizations for each model
                 for sim in range(realizations):
-                    path_background_to_use = fits_background_list[sim]
+                    # path_background_to_use = fits_background_list[sim]
                     p = subprocess.Popen(
                         ['python',
                          'simulation_analysis.py',
                          in_simu,
                          in_jobs,
                          glob.glob(f"{model}/*xml")[0],
-                         str(sim + 1),
-                         path_background_to_use
+                         str(sim + 1)
+                         # , path_background_to_use
                          ],
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE
@@ -275,7 +275,7 @@ if __name__ == '__main__':
             for counter, model in enumerate(models_list[:max_models]):
                 # loop over the realizations for each model
                 for sim in range(realizations):
-                    path_background_to_use = fits_background_list[sim]
+                    # path_background_to_use = fits_background_list[sim]
                     p = subprocess.Popen(
                         [*exec_string.split(" "),
                          "python",
@@ -284,7 +284,7 @@ if __name__ == '__main__':
                          in_jobs,
                          glob.glob(f"{model}/*xml")[0],
                          str(sim + 1),
-                         path_background_to_use
+                         # path_background_to_use
                          ],
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE
@@ -308,7 +308,7 @@ if __name__ == '__main__':
                 for sim in range(realizations):
                     model_to_out = glob.glob(f"{model}/*xml")[0]
 
-                    path_background_to_use = fits_background_list[sim]
+                    # path_background_to_use = fits_background_list[sim]
 
                     script_name = f"sim_launch_{model}_{str(sim).zfill(3)}.sh"
                     out_file_name = folder_launch + "/" + script_name
@@ -330,7 +330,7 @@ if __name__ == '__main__':
                     file_out.write(f'export PATH="{conda_path}/lib:$PATH"\n')
                     file_out.write(f'export PYTHON_EGG_CACHE="{python_cache}"\n')
                     file_out.write(f'source activate {env_name}\n')
-                    file_out.write(f'python {ctools_pipe_path}/simulation_analysis.py {ctools_pipe_path}/{in_simu} {ctools_pipe_path}/{in_jobs} {model_to_out}  {str(sim + 1)} {path_background_to_use} \n')
+                    file_out.write(f'python {ctools_pipe_path}/simulation_analysis.py {ctools_pipe_path}/{in_simu} {ctools_pipe_path}/{in_jobs} {model_to_out}  {str(sim + 1)}  \n') # {path_background_to_use} \n')
                     file_out.write('source deactivate\n')
                     file_out.close()
 
