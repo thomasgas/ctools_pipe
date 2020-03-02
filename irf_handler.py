@@ -3,7 +3,7 @@ import sys
 import yaml
 
 class IRFPicker:
-    def __init__(self, irf_container, root_folder):
+    def __init__(self, irf_container, root_folder="."):
         """
         Load informations. Dictionary created from yaml file: see example.
         :param irf_container: dictionary to choose IRF name

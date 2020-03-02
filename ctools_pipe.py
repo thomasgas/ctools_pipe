@@ -1,4 +1,4 @@
-import sys
+import sys, os
 import argparse
 import yaml
 import subprocess
@@ -201,11 +201,20 @@ if __name__ == '__main__':
         realizations = ctobssim_input['realizations']
 
         # load models
-        models_path = create_path(ctobssim_input['models_in']['xml_path'])
-        models_list = glob.glob(f"{models_path}/*")
-        if len(models_list) == 0:
+        xml_models_path = create_path(ctobssim_input['models_in']['xml_path'])
+        if len(glob.glob(f"{xml_models_path}/*")) == 0:
             print("No input model")
             sys.exit()
+
+        # just the names of the models without the path: to be used also for fits files
+        models_list = os.listdir(xml_models_path)
+
+        # load fits files for visibility checks
+        fits_models_path = create_path(ctobssim_input['models_in']['fits_path'])
+        # fits_models_list = glob.glob(f"{fits_models_path}/*")
+        # if len(fits_models_list) == 0:
+        #     print("No fits model")
+        #     sys.exit()
 
         max_models = config_in['source']['max_sources']
 
@@ -236,23 +245,25 @@ if __name__ == '__main__':
             # loop over the models
             for counter, model in enumerate(models_list[:max_models]):
                 # loop over the realizations for each model
+                src_fits_file = f"{fits_models_path}/{model}.fits"
+                src_xml_file = f"{xml_models_path}/{model}/model_{model}.xml"
+
                 for sim in range(realizations):
-                    # path_background_to_use = fits_background_list[sim]
                     p = subprocess.Popen(
                         ['python',
                          'simulation_analysis.py',
                          in_simu,
                          in_jobs,
-                         glob.glob(f"{model}/*xml")[0],
+                         src_xml_file,
+                         src_fits_file,
                          str(sim + 1)
-                         # , path_background_to_use
                          ],
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE
                     )
                     # if everything goes well, the output is None
                     # check this just for the first job
-                    #if counter == 0 and sim == 0:
+                    # if counter == 0 and sim == 0:
                     (result, error) = p.communicate()
                     print(result, error)
         elif execution['mode'] == "bsub":
@@ -274,17 +285,19 @@ if __name__ == '__main__':
             # loop over the models
             for counter, model in enumerate(models_list[:max_models]):
                 # loop over the realizations for each model
+                src_fits_file = f"{fits_models_path}/{model}.fits"
+                src_xml_file = f"{xml_models_path}/{model}/model_{model}.xml"
+
                 for sim in range(realizations):
-                    # path_background_to_use = fits_background_list[sim]
                     p = subprocess.Popen(
                         [*exec_string.split(" "),
                          "python",
                          'simulation_analysis.py',
                          in_simu,
                          in_jobs,
-                         glob.glob(f"{model}/*xml")[0],
-                         str(sim + 1),
-                         # path_background_to_use
+                         src_xml_file,
+                         src_fits_file,
+                         str(sim + 1)
                          ],
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE
@@ -295,6 +308,7 @@ if __name__ == '__main__':
                         print(result, error)
 
         elif execution['mode'] == "qsub":
+
             details = execution['details']
             # create scripts to lunch on a folder
             folder_launch = create_path(f"{execution['path']}/tmp/sim/scripts")
@@ -305,11 +319,10 @@ if __name__ == '__main__':
             # loop over all the models
             for model in models_list[:max_models]:
                 # loop over the realizations for each model
+                src_fits_file = f"{fits_models_path}/{model}.fits"
+                src_xml_file = f"{xml_models_path}/{model}/model_{model}.xml"
+
                 for sim in range(realizations):
-                    model_to_out = glob.glob(f"{model}/*xml")[0]
-
-                    # path_background_to_use = fits_background_list[sim]
-
                     script_name = f"sim_launch_{model}_{str(sim).zfill(3)}.sh"
                     out_file_name = folder_launch + "/" + script_name
                     file_out = open(out_file_name, "w")
@@ -320,7 +333,7 @@ if __name__ == '__main__':
                         evaluate_folder = env(env_folder_name)
                         file_out.write(f'export {env_folder_name}="{evaluate_folder}"\n')
 
-                    ctools_pipe_path=create_path(execution['software_path'])
+                    ctools_pipe_path = create_path(execution['software_path'])
                     env_name = execution['conda']['env_name']
                     caldb_path = create_path(execution['caldb'])
                     python_cache = create_path(execution['python_cache'])
@@ -330,7 +343,7 @@ if __name__ == '__main__':
                     file_out.write(f'export PATH="{conda_path}/lib:$PATH"\n')
                     file_out.write(f'export PYTHON_EGG_CACHE="{python_cache}"\n')
                     file_out.write(f'source activate {env_name}\n')
-                    file_out.write(f'python {ctools_pipe_path}/simulation_analysis.py {ctools_pipe_path}/{in_simu} {ctools_pipe_path}/{in_jobs} {model_to_out}  {str(sim + 1)}  \n') # {path_background_to_use} \n')
+                    file_out.write(f'python {ctools_pipe_path}/simulation_analysis.py {ctools_pipe_path}/{in_simu} {ctools_pipe_path}/{in_jobs} {src_xml_file} {src_fits_file}  {str(sim + 1)}  \n')
                     file_out.write('source deactivate\n')
                     file_out.close()
 

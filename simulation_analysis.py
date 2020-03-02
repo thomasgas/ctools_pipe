@@ -11,16 +11,18 @@ from astropy.io import fits
 from gammapy.stats import significance_on_off
 import numpy as np
 import glob
+from utils import Observability
 
 
-def grb_simulation(sim_in, config_in, model_xml, counter):
+def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
     """
     Function to handle the GRB simulation.
     :param sim_in: the yaml file for the simulation (unpacked as a dict of dicts)
     :param config_in: the yaml file for the job handling (unpacked as a dict of dicts)
     :param model_xml: the XML model name for the source under analysis
+    :param fits_header_0: header for the fits file of the GRB model to use. Used in the visibility calculation
     :param counter: integer number. counts the id of the source realization
-    :return:
+    :return: significance obtained with the activated detection methods
     """
 
     grb_name = model_xml.split('/')[-1].split('_')[1][:-4]
@@ -34,17 +36,38 @@ def grb_simulation(sim_in, config_in, model_xml, counter):
 
     if simulation_mode == "auto":
         print("using visibility to get IRFs")
+
+        # GRB information from the fits header
+        ra = fits_header_0['RA']
+        dec = fits_header_0['DEC']
+        t0 = fits_header_0['GRBJD']
+
+        irf_dict = sim_in['IRF']
+        site = irf_dict['site']
+        obs_condition = Observability(site=site)
+        obs_condition.set_irf(irf_dict)
+        obs_condition.check(RA=ra, DEC=dec, t_start=t0)
+
+        irf = obs_condition.values()[0]
+        name_irf = irf.irf_pick()
+
+        backgrounds_path = create_path(ctobss_params['bckgrnd_path'])
+        fits_background_list = glob.glob(
+            f"{backgrounds_path}/{irf.prod_number}_{irf.prod_version}_{name_irf}/background*.fits")
+
+        if len(fits_background_list) == 0:
+            print(f"No background for IRF {name_irf}")
+            sys.exit()
+
+        background_fits = fits_background_list[int(counter) - 1]
+        obs_back = gammalib.GCTAObservation(background_fits)
+
     elif simulation_mode == "manual":
         print("manual picking IRF")
 
         # find proper IRF name
         irf = IRFPicker(sim_in, ctools_pipe_path)
         name_irf = irf.irf_pick()
-
-        if irf.prod_number == "3b" and irf.prod_version == 0:
-            caldb = "prod3b"
-        else:
-            caldb = f'prod{irf.prod_number}-v{irf.prod_version}'
 
         backgrounds_path = create_path(ctobss_params['bckgrnd_path'])
         fits_background_list = glob.glob(
@@ -60,6 +83,11 @@ def grb_simulation(sim_in, config_in, model_xml, counter):
     else:
         print(f"wrong input for IRF - mode. Input is {simulation_mode}. Use 'auto' or 'manual' instead")
         sys.exit()
+
+    if irf.prod_number == "3b" and irf.prod_version == 0:
+        caldb = "prod3b"
+    else:
+        caldb = f'prod{irf.prod_number}-v{irf.prod_version}'
 
     seed = int(counter)*10
 
@@ -439,12 +467,13 @@ if __name__ == '__main__':
 
     sim_yaml_file = yaml.safe_load(open(sys.argv[1]))
     jobs_yaml_file = yaml.safe_load(open(sys.argv[2]))
-    model_input = sys.argv[3]
-    realization_id = sys.argv[4]
+    xml_model_input = sys.argv[3]
+    fits_model_input = sys.argv[4]
+    realization_id = sys.argv[5]
 
     if sim_yaml_file['source']['type'] == "GRB":
-        # grb_simulation(sim_yaml_file, jobs_yaml_file, model_input, realization_id, sys.argv[5])
-        grb_simulation(sim_yaml_file, jobs_yaml_file, model_input, realization_id)
+        header_GRB = fits.open(fits_model_input)[0].header
+        grb_simulation(sim_yaml_file, jobs_yaml_file, xml_model_input, header_GRB, realization_id)
     elif sim_yaml_file['source']['type'] == "GW":
         print("WIP")
         # gw_simulation(sim_yaml_file, jobs_yaml_file, sys.argv[3], sys.argv[4], sys.argv[5])
