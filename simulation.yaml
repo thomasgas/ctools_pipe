@@ -3,35 +3,46 @@
 # the models already created.
 # It will crash if the folders that are given as inputs for the data are found to be empty
 
+# If the mode is manual, the times of the simulations are those specified and the IRF is the one chosen.
+# If the mode is AUTO, the visibility of the source is taken into account. This affects:
+# - times can either be from the onset of the GRB or from the time at which the source is visible
 
 IRF:                                  # asterisc: mandatory  both for manual and auto
   mode: manual                          # * auto --> use visibility condition; manual --> handpick che
   prod:                               # * this is needed in any case. different MC prod --> different results
     number: 3b                        # *
     version: 2                        # * 0, 1 or 2
-  site: North
+  site: South
   time: '0.5h'                        # * 0.5h is valid only for prod3-v2. otherwise use 30m
   subarray: LST                       # * only for prod3b: LST/MST/SST/MSTSST/FULL/TS
   TS: 0                               # * only for prod3b: 1 (yes), 0 (no). THRESHOLD ARRAY
   zenith: 20                          # only for manual mode
   pointing: average                   # only for manual mode
+
+# specify source type. If GW then the folder with the pointing files must be provided
 source:
-  type: GRB                           # can be GW or GRB
-  pointings_path: $MAIN_FOLDER/pointings # only for GW
-  max_sources: 1                      # for testing: limits the number of simulations to do
+  type: GRB                               # can be GW or GRB
+  pointings_path: $MAIN_FOLDER/pointings  # only for GW
+  max_sources: 1                          # for testing: limits the number of simulations to do
+
+# the actual parameters for the  simulation
 ctobssim:
-  realizations: 3                     # simulations to be done per each model
-  bckgrnd_path: $MAIN_FOLDER/back_sim # where the background simulations stored: MANDATORY for GRB simulations
+  realizations: 1                       # simulations to be done per each model
+  bckgrnd_path: $MAIN_FOLDER/back_sim   # where the background simulations stored: MANDATORY for GRB simulations
   models_in:
-    xml_path: $MAIN_FOLDER/models     # input folder for the FITS files
-    fits_path: $MAIN_FOLDER/input     # output folder wih XML files for ctools
-  radius: 5                           # in degrees. useless to have a value larger than 5 (radius of SSTs fov)
+    xml_path: $MAIN_FOLDER/models       # input folder for the FITS files
+    fits_path: $MAIN_FOLDER/input       # output folder wih XML files for ctools
+  radius: 5                             # in degrees. useless to have a value larger than 5 (radius of SSTs fov)
+
+# vis --> time zero is when the source becomes visible. onset --> from the onset of the GRB (visible or not)
   time:
+    t_zero: vis                        # "vis" or "onset"
     t_min: 30 s
     t_max: 120 s
   energy:
     e_min: 30 GeV
     e_max: 10 TeV
+
 ctselect:
   time_cut:
     mode: 'log'                       # this can be log (logarithmic spacing) or lin (linear spacing)
@@ -39,6 +50,8 @@ ctselect:
     t_slices: 2                       # 0 --> keep all time interval...t_min and t_max are ignored
     t_min: 30 s                       # write N/A to use the same as the simulation
     t_max: 120 s                      # write N/A to use the same as the simulation
+
+# detection methods implemented: counts, ctlike-onoff and ctlike-std
 ctlike:
   counts: yes                         # simple Li&Ma (uses ctskymap RING method). to disable --> no.
   pars_counts:                        # input parameters (see ctools documentation)

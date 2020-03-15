@@ -11,10 +11,10 @@ IRF:
   TS: 0                                # only for prod3b: 1 (yes), 0 (no)
 sim:
   realizations: 5                     # will be lunched as 10 separate jobs
-  radius: 3                            # in degrees
+  radius: 4                            # in degrees
   time:
     t_min: 0 s
-    t_max: 1800 s
+    t_max: 300 s
   energy:
-    e_min: 30 GeV
+    e_min: 20 GeV
     e_max: 5 TeV
