@@ -9,7 +9,9 @@ from astropy.time import Time
 
 from irf_handler import IRFPicker
 
+from astropy.time import TimeDelta
 
+import pandas as pd
 
 # # Some defifinitions used in func observability -----------
 # # Array N coordinates
@@ -89,8 +91,8 @@ class Observability:
 
         self.earth_location = EarthLocation(lon=self.longitude, lat=self.latitude, height=self.height)
 
-        self.Proposal_obTime = 144000.0  # (s) checking for 4h of observation!
-        self.Steps_observability = 600.0  # (s) the observability is checked with steps of 300s
+        self.Proposal_obTime = 14400.0  # (s) checking for 4h of observation!
+        self.Steps_observability = 60.0  # (s) the observability is checked with steps of 300s
         self.Alert_zenith_max = 66.0  # (deg)
         self.Sun_zenith_min = 105.0  # (deg)  (105-108 ?)
         self.Moon_separation = 30.0  # (deg)
@@ -101,24 +103,45 @@ class Observability:
         self.window = None
         self.subarray = None
         self.threshold = None
+        self._root_folder = "."
 
     def set_irf(self, input_dict):
+        """
+        Setter function used to fix all the parameters that are not influenced by the observability tool
+        :param input_dict: input dict such as the one from the simulation.yaml file for the IRF part
+        :return: None
+        """
         self.prod = input_dict['prod']['number']
         self.prod_version = input_dict['prod']['version']
         self.window = input_dict['time']
         self.subarray = input_dict['subarray']
         self.threshold = input_dict['TS']
 
-    def check(self, RA, DEC, t_start):
+    def check(self, RA, DEC, t_start, t_min=0, t_max=None):
+        """
+        Use the set_irf method to set all the fixed parameters.
+        The this class is used to get the source position, to get the IRF name at each different time.
+        :param RA: right ascension of the source
+        :param DEC: declination of the source
+        :param t_start: (JD) time of the GRB onset
+        :param t_min: (seconds) begin of observation after t_start --> should be 30 seconds
+        :param t_max: (seconds) end of observation after t_start
+        :return: pandas.Dataframe with IRF, IRF_name, t_in, t_end, duration for each IRF.
+        """
 
         alert_coord = SkyCoord(RA, DEC, frame='fk5', unit='deg')
 
         alert_time = Time(t_start - self.TimeOffset, format='jd', scale='utc')
 
-        # We check the observability for 4h
-        allocated_obtime = np.arange(0, self.Proposal_obTime + self.Steps_observability, self.Steps_observability) * u.s
+        # Check observability with default window of 4h
+        if t_max is None:
+            t_max = self.Proposal_obTime + self.Steps_observability
+        else:
+            t_max += self.Steps_observability
 
-        observing_time = alert_time + allocated_obtime
+        allocated_obstime = np.arange(t_min, t_max, self.Steps_observability) * u.s
+
+        observing_time = alert_time + allocated_obstime
 
         obs_frame = AltAz(location=self.earth_location, obstime=observing_time)
 
@@ -143,7 +166,10 @@ class Observability:
 
         observable = observing_time[mask]
 
-        IRF_dict = {}
+        times_begin = []
+        times_end = []
+        IRF_list = []
+        IRF_name_list = []
 
         for obs_id in observable_mask:
             time_in_window = observing_time[obs_id]
@@ -176,8 +202,28 @@ class Observability:
                                  'subarray': self.subarray,
                                  'TS': self.threshold}}
 
-            irf = IRFPicker(IRFstruct)
+            irf = IRFPicker(IRFstruct, root_folder=self._root_folder)
             IRF_name = irf.irf_pick()
-            IRF_dict[f"{time_in_window[0].value:.4f}"] = irf
+            t_in_window = TimeDelta(time_in_window[0] - alert_time).to_value(u.s)
+            t_end_window = t_in_window + self.Steps_observability
 
-        return IRF_dict
+            try:
+                if IRF_name_list[-1] == IRF_name:
+                    times_end[-1] = t_end_window
+                else:
+                    IRF_name_list.append(IRF_name)
+                    IRF_list.append(irf)
+                    times_begin.append(t_in_window)
+                    times_end.append(t_end_window)
+            except IndexError:
+                IRF_name_list.append(IRF_name)
+                IRF_list.append(irf)
+                times_begin.append(t_in_window)
+                times_end.append(t_end_window)
+
+        result_dataframe = pd.DataFrame(
+            data={'IRF_name': IRF_name_list, 'IRF': IRF_list, 't_in': times_begin, 't_end': times_end})
+
+        result_dataframe['duration'] = result_dataframe['t_end'] - result_dataframe['t_in']
+
+        return result_dataframe

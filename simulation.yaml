@@ -34,22 +34,21 @@ ctobssim:
     fits_path: $MAIN_FOLDER/input       # output folder wih XML files for ctools
   radius: 5                             # in degrees. useless to have a value larger than 5 (radius of SSTs fov)
 
-# vis --> time zero is when the source becomes visible. onset --> from the onset of the GRB (visible or not)
+# VIS --> time zero is when the source becomes visible. ONSET --> from the onset of the GRB (visible or not)
+# If the IRF mode is MANUAL, time is "ONSET"
   time:
-    t_zero: vis                        # "vis" or "onset"
+    t_zero: VIS                        # "VIS" or "ONSET"
     t_min: 30 s
     t_max: 120 s
   energy:
-    e_min: 30 GeV
-    e_max: 10 TeV
+    e_min: 30 GeV                     # N/A: choose from the first bin of the IRF
+    e_max: 10 TeV                     # N/A: choose from the first bin of the IRF
 
 ctselect:
   time_cut:
     mode: 'log'                       # this can be log (logarithmic spacing) or lin (linear spacing)
     obs_mode: iter                    # "cumul": t[0] --> t[i]. "iter": t[i] --> t[i+1], "all": t[i] --> t[j]
     t_slices: 2                       # 0 --> keep all time interval...t_min and t_max are ignored
-    t_min: 30 s                       # write N/A to use the same as the simulation
-    t_max: 120 s                      # write N/A to use the same as the simulation
 
 # detection methods implemented: counts, ctlike-onoff and ctlike-std
 ctlike:

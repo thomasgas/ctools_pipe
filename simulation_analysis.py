@@ -12,6 +12,7 @@ from gammapy.stats import significance_on_off
 import numpy as np
 import glob
 from utils import Observability
+from astropy.time import Time
 
 
 def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
@@ -31,159 +32,165 @@ def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
     ctools_pipe_path = create_path(config_in['exe']['software_path'])
     ctobss_params = sim_in['ctobssim']
 
-    # choose between AUTO mode (use visibility) and MANUAL mode (manually insert IRF)
-    simulation_mode = sim_in['IRF']['mode']
-
-    if simulation_mode == "auto":
-        print("using visibility to get IRFs")
-
-        # GRB information from the fits header
-        ra = fits_header_0['RA']
-        dec = fits_header_0['DEC']
-        t0 = fits_header_0['GRBJD']
-
-        irf_dict = sim_in['IRF']
-        site = irf_dict['site']
-        obs_condition = Observability(site=site)
-        obs_condition.set_irf(irf_dict)
-        obs_condition.check(RA=ra, DEC=dec, t_start=t0)
-
-        irf = obs_condition.values()[0]
-        name_irf = irf.irf_pick()
-
-        backgrounds_path = create_path(ctobss_params['bckgrnd_path'])
-        fits_background_list = glob.glob(
-            f"{backgrounds_path}/{irf.prod_number}_{irf.prod_version}_{name_irf}/background*.fits")
-
-        if len(fits_background_list) == 0:
-            print(f"No background for IRF {name_irf}")
-            sys.exit()
-
-        background_fits = fits_background_list[int(counter) - 1]
-        obs_back = gammalib.GCTAObservation(background_fits)
-
-    elif simulation_mode == "manual":
-        print("manual picking IRF")
-
-        # find proper IRF name
-        irf = IRFPicker(sim_in, ctools_pipe_path)
-        name_irf = irf.irf_pick()
-
-        backgrounds_path = create_path(ctobss_params['bckgrnd_path'])
-        fits_background_list = glob.glob(
-            f"{backgrounds_path}/{irf.prod_number}_{irf.prod_version}_{name_irf}/background*.fits")
-
-        if len(fits_background_list) == 0:
-            print(f"No background for IRF {name_irf}")
-            sys.exit()
-
-        background_fits = fits_background_list[int(counter) - 1]
-        obs_back = gammalib.GCTAObservation(background_fits)
-
-    else:
-        print(f"wrong input for IRF - mode. Input is {simulation_mode}. Use 'auto' or 'manual' instead")
-        sys.exit()
-
-    if irf.prod_number == "3b" and irf.prod_version == 0:
-        caldb = "prod3b"
-    else:
-        caldb = f'prod{irf.prod_number}-v{irf.prod_version}'
-
     seed = int(counter)*10
 
+    # PARAMETERS FROM THE CTOBSSIM
     sim_t_min = u.Quantity(ctobss_params['time']['t_min']).to_value(u.s)
     sim_t_max = u.Quantity(ctobss_params['time']['t_max']).to_value(u.s)
     sim_e_min = u.Quantity(ctobss_params['energy']['e_min']).to_value(u.TeV)
     sim_e_max = u.Quantity(ctobss_params['energy']['e_max']).to_value(u.TeV)
     sim_rad = ctobss_params['radius']
 
-    # source simulation
-    sim = ctools.ctobssim()
-    sim['inmodel'] = model_xml
-    sim['caldb'] = caldb
-    sim['irf'] = name_irf
-    sim['ra'] = 0.0
-    sim['dec'] = 0.0
-    sim['rad'] = sim_rad
-    sim['tmin'] = sim_t_min
-    sim['tmax'] = sim_t_max
-    sim['emin'] = sim_e_min
-    sim['emax'] = sim_e_max
-    sim['seed'] = seed
-    sim.run()
-
-    obs = sim.obs()
-
-    # # move the source photons from closer to (RA,DEC)=(0,0), where the background is located
-    # for event in obs[0].events():
-    #     # ra_evt = event.dir().dir().ra()
-    #     dec_evt = event.dir().dir().dec()
-    #     ra_evt_deg = event.dir().dir().ra_deg()
-    #     dec_evt_deg = event.dir().dir().dec_deg()
-    #
-    #     ra_corrected = (ra_evt_deg - ra_pointing)*np.cos(dec_evt)
-    #     dec_corrected = dec_evt_deg - dec_pointing
-    #     event.dir().dir().radec_deg(ra_corrected, dec_corrected)
-
-    # append all background events to GRB ones ==> there's just one observation and not two
-    for event in obs_back.events():
-        obs[0].events().append(event)
-
-    # delete all 70+ models from the obs def file...not needed any more
-    obs.models(gammalib.GModels())
-
-    # CTSELECT
-    select_time = sim_in['ctselect']['time_cut']
-    slices = int(select_time['t_slices'])
-
-    if slices == 0:
-        times = [sim_t_min, sim_t_max]
-        times_start = times[:-1]
-        times_end = times[1:]
-    elif slices > 0:
-        time_mode = select_time['mode']
-        t_min = u.Quantity(select_time['t_min']).to_value(u.s)
-        t_max = u.Quantity(select_time['t_max']).to_value(u.s)
-        if time_mode == "log":
-            times = np.logspace(np.log10(t_min), np.log10(t_max), slices + 1, endpoint=True)
-        elif time_mode == "lin":
-            times = np.linspace(t_min, t_max, slices + 1, endpoint=True)
-        else:
-            print(f"{time_mode} not valid. Use 'log' or 'lin' ")
-            sys.exit()
-
-        if select_time['obs_mode'] == "iter":
-            times_start = times[:-1]
-            times_end = times[1:]
-        elif select_time['obs_mode'] == "cumul":
-            times_start = np.repeat(times[0], slices)         # this is to use the same array structure for the loop
-            times_end = times[1:]
-        elif select_time['obs_mode'] == "all":
-            begins, ends = np.meshgrid(times[:-1], times[1:])
-            mask_times = begins < ends
-            times_start = begins[mask_times].ravel()
-            times_end = ends[mask_times].ravel()
-        else:
-            print(f"obs_mode: {select_time['obs_mode']} not supported")
-            sys.exit()
-
-    else:
-        print(f"value {slices} not supported...check yaml file")
-        sys.exit()
-
-    # ------------------------------------
-    # ----- TIME LOOP STARTS HERE --------
-    # ------------------------------------
-
-    ctlike_mode = sim_in['ctlike']
-    mode_1 = ctlike_mode['counts']
-    mode_2 = ctlike_mode['ctlike-onoff']
-    mode_3 = ctlike_mode['ctlike-std']
-
     output_path = create_path(sim_in['output'] + '/' + grb_name)
 
     with open(f"{output_path}/GRB-{grb_name}_seed-{seed}.txt", "w") as f:
         f.write(f"GRB,seed,time_start,time_end,sigma_lima,sqrt_TS_onoff,sqrt_TS_std\n")
+        # VISIBILITY PART
+        # choose between AUTO mode (use visibility) and MANUAL mode (manually insert IRF)
+        simulation_mode = sim_in['IRF']['mode']
+
+        if simulation_mode == "auto":
+            print("using visibility to get IRFs")
+
+            # GRB information from the fits header
+            ra = fits_header_0['RA']
+            dec = fits_header_0['DEC']
+            t0 = Time(fits_header_0['GRBJD'])
+
+            irf_dict = sim_in['IRF']
+            site = irf_dict['site']
+            obs_condition = Observability(site=site)
+            obs_condition.set_irf(irf_dict)
+
+            t_zero_mode = ctobss_params['time']['t_zero'].lower()
+
+            if t_zero_mode == "VIS":
+                # check if the source is visible one day after the onset of the source
+                print("time starts when source becomes visible")
+                obs_condition.Proposal_obTime = 86400
+                condition_check = obs_condition.check(RA=ra, DEC=dec, t_start=t0)
+
+            elif t_zero_mode == "ONSET":
+                print("time starts from the onset of the GRB")
+                condition_check = obs_condition.check(RA=ra, DEC=dec, t_start=t0, t_min=sim_t_min, t_max=sim_t_max)
+
+            else:
+                print(f"Choose some proper mode between 'VIS' and 'ONSET'. {t_zero_mode} is not a valid one.")
+                sys.exit()
+
+            # NO IRF in AUTO mode ==> No simulation! == EXIT!
+            if len(condition_check) == 0:
+                f.write(f"{grb_name},{seed}, -1, -1, -1, -1, -1\n")
+                sys.exit()
+
+        elif simulation_mode == "manual":
+            print("manual picking IRF")
+
+            # find proper IRF name
+            irf = IRFPicker(sim_in, ctools_pipe_path)
+            name_irf = irf.irf_pick()
+
+            backgrounds_path = create_path(ctobss_params['bckgrnd_path'])
+            fits_background_list = glob.glob(
+                f"{backgrounds_path}/{irf.prod_number}_{irf.prod_version}_{name_irf}/background*.fits")
+
+            if len(fits_background_list) == 0:
+                print(f"No background for IRF {name_irf}")
+                sys.exit()
+
+            background_fits = fits_background_list[int(counter) - 1]
+            obs_back = gammalib.GCTAObservation(background_fits)
+
+        else:
+            print(f"wrong input for IRF - mode. Input is {simulation_mode}. Use 'auto' or 'manual' instead")
+            sys.exit()
+
+        if irf.prod_number == "3b" and irf.prod_version == 0:
+            caldb = "prod3b"
+        else:
+            caldb = f'prod{irf.prod_number}-v{irf.prod_version}'
+
+        # source simulation
+        sim = ctools.ctobssim()
+        sim['inmodel'] = model_xml
+        sim['caldb'] = caldb
+        sim['irf'] = name_irf
+        sim['ra'] = 0.0
+        sim['dec'] = 0.0
+        sim['rad'] = sim_rad
+        sim['tmin'] = sim_t_min
+        sim['tmax'] = sim_t_max
+        sim['emin'] = sim_e_min
+        sim['emax'] = sim_e_max
+        sim['seed'] = seed
+        sim.run()
+
+        obs = sim.obs()
+
+        # # move the source photons from closer to (RA,DEC)=(0,0), where the background is located
+        # for event in obs[0].events():
+        #     # ra_evt = event.dir().dir().ra()
+        #     dec_evt = event.dir().dir().dec()
+        #     ra_evt_deg = event.dir().dir().ra_deg()
+        #     dec_evt_deg = event.dir().dir().dec_deg()
+        #
+        #     ra_corrected = (ra_evt_deg - ra_pointing)*np.cos(dec_evt)
+        #     dec_corrected = dec_evt_deg - dec_pointing
+        #     event.dir().dir().radec_deg(ra_corrected, dec_corrected)
+
+        # append all background events to GRB ones ==> there's just one observation and not two
+        for event in obs_back.events():
+            obs[0].events().append(event)
+
+        # delete all 70+ models from the obs def file...not needed any more
+        obs.models(gammalib.GModels())
+
+        # CTSELECT
+        select_time = sim_in['ctselect']['time_cut']
+        slices = int(select_time['t_slices'])
+
+        if slices == 0:
+            times = [sim_t_min, sim_t_max]
+            times_start = times[:-1]
+            times_end = times[1:]
+        elif slices > 0:
+            time_mode = select_time['mode']
+            if time_mode == "log":
+                times = np.logspace(np.log10(sim_t_min), np.log10(sim_t_max), slices + 1, endpoint=True)
+            elif time_mode == "lin":
+                times = np.linspace(sim_t_min, sim_t_max, slices + 1, endpoint=True)
+            else:
+                print(f"{time_mode} not valid. Use 'log' or 'lin' ")
+                sys.exit()
+
+            if select_time['obs_mode'] == "iter":
+                times_start = times[:-1]
+                times_end = times[1:]
+            elif select_time['obs_mode'] == "cumul":
+                times_start = np.repeat(times[0], slices)         # this is to use the same array structure for the loop
+                times_end = times[1:]
+            elif select_time['obs_mode'] == "all":
+                begins, ends = np.meshgrid(times[:-1], times[1:])
+                mask_times = begins < ends
+                times_start = begins[mask_times].ravel()
+                times_end = ends[mask_times].ravel()
+            else:
+                print(f"obs_mode: {select_time['obs_mode']} not supported")
+                sys.exit()
+
+        else:
+            print(f"value {slices} not supported...check yaml file")
+            sys.exit()
+
+        # ------------------------------------
+        # ----- TIME LOOP STARTS HERE --------
+        # ------------------------------------
+
+        ctlike_mode = sim_in['ctlike']
+        mode_1 = ctlike_mode['counts']
+        mode_2 = ctlike_mode['ctlike-onoff']
+        mode_3 = ctlike_mode['ctlike-std']
+
         for t_in, t_end in zip(times_start, times_end):
             sigma_onoff = 0
             sqrt_ts_like_onoff = 0
