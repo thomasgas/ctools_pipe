@@ -13,6 +13,7 @@ import numpy as np
 import glob
 from utils import Observability
 from astropy.time import Time
+import pandas as pd
 
 
 def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
@@ -455,19 +456,160 @@ def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
             del select_time
 
 
-def gw_simulation(sim_in, config_in, model_xml, counter, background_fits):
+def gw_simulation(sim_in, config_in, model_xml, fits_model, counter):
     """
 
     :param sim_in:
     :param config_in:
     :param model_xml:
-    :param background_fits:
+    :param fits_model:
     :param counter:
     :return:
     """
 
-    print("Working on it...")
-    sys.exit()
+    src_name = fits_model.split("/")[-1][:-5]
+
+    fits_header_0 = fits.open(fits_model)[0].header
+    ra_src = fits_header_0['RA']
+    dec_src = fits_header_0['DEC']
+
+    src_yaml = sim_in['source']
+
+    point_path = create_path(src_yaml['pointings_path'])
+    opt_point_path = f"{point_path}/optimized_pointings"
+
+    ctools_pipe_path = create_path(config_in['exe']['software_path'])
+    ctobss_params = sim_in['ctobssim']
+
+    seed = int(counter)*10
+
+    # # PARAMETERS FROM THE CTOBSSIM
+    sim_e_min = u.Quantity(ctobss_params['energy']['e_min']).to_value(u.TeV)
+    sim_e_max = u.Quantity(ctobss_params['energy']['e_max']).to_value(u.TeV)
+
+    sim_rad = ctobss_params['radius']
+    output_path = create_path(sim_in['output'] + '/' + src_name)
+
+    irf_dict = sim_in['IRF']
+    site = irf_dict['site']
+
+    with open(f"{output_path}/GW-{src_name}_seed-{seed}_site-{site}.txt", "w") as f:
+        f.write(f"GW_name,RA_src,DEC_src,seed,pointing_id,ra_point,dec_point,radius,time_start,time_end,sigma\n")
+        run_id, merger_id = src_name.split('_')
+        pointing_data = pd.read_csv(
+            f"{opt_point_path}/{run_id}_Merger{merger_id}_SuggestedPointings_GWOptimisation_test.txt", header=0,
+            sep=" ")
+
+        RA_data = pointing_data['RA(deg)']
+        DEC_data = pointing_data['DEC(deg)']
+        times = pointing_data['Observation Time UTC']
+
+        # LOOP OVER POINTINGS
+        for index in range(0, len(pointing_data) - 1):
+            RA_point = RA_data[index]
+            DEC_point = DEC_data[index]
+            t_in_point = Time(times[index]) + 2 * 1 * u.hour
+            t_end_point = Time(times[index + 1]) + 2 * 1 * u.hour
+
+            obs_condition = Observability(site=site)
+            obs_condition.set_irf(irf_dict)
+            obs_condition.Proposal_obTime = 10
+            obs_condition.TimeOffset = 0
+            obs_condition.Steps_observability = 10
+            condition_check = obs_condition.check(RA=RA_point, DEC=DEC_point, t_start=t_in_point)
+
+            if len(condition_check) == 0:
+                f.write(
+                    f"{src_name},{ra_src},{dec_src},{seed},{index},{RA_point},{DEC_point},{sim_rad},{t_in_point},{t_end_point}, -1\n")
+                continue
+
+            name_irf = condition_check['IRF_name'][0]
+            irf = condition_check['IRF'][0]
+            # model loading
+
+            if irf.prod_number == "3b" and irf.prod_version == 0:
+                caldb = "prod3b"
+            else:
+                caldb = f'prod{irf.prod_number}-v{irf.prod_version}'
+
+            # simulation
+            sim = ctools.ctobssim()
+            sim['inmodel'] = model_xml
+            sim['caldb'] = caldb
+            sim['irf'] = name_irf
+            sim['ra'] = RA_point
+            sim['dec'] = DEC_point
+            sim['rad'] = sim_rad
+            sim['tmin'] = t_in_point.value
+            sim['tmax'] = t_end_point.value
+            sim['emin'] = sim_e_min
+            sim['emax'] = sim_e_max
+            sim['seed'] = seed
+            sim.run()
+
+            obs = sim.obs()
+            # ctskymap
+
+
+            skymap = ctools.ctskymap(obs)
+            skymap['proj'] = 'CAR'
+            skymap['coordsys'] = 'CEL'
+            skymap['xref'] = RA_point
+            skymap['yref'] = DEC_point
+            skymap['binsz'] = 0.02
+            skymap['nxpix'] = 200
+            skymap['nypix'] = 200
+            skymap['emin'] = sim_e_min
+            skymap['emax'] = sim_e_max
+            skymap['bkgsubtract'] = 'NONE'
+            skymap.run()
+
+            # cssrcdetect
+            srcdetect = cscripts.cssrcdetect(skymap.skymap().copy())
+            srcdetect['srcmodel'] = 'POINT'
+            srcdetect['bkgmodel'] = 'NONE'  # we will determine the background model in a later step
+            srcdetect['threshold'] = 5
+            srcdetect['corr_rad'] = 0.1
+            srcdetect.run()
+
+            models = srcdetect.models()
+            if len(models) > 0:
+                hotspot = models['Src001']
+                ra_hotspot = hotspot['RA'].value()
+                dec_hotspot = hotspot['DEC'].value()
+            else:
+                ra_hotspot = 0
+                dec_hotspot = 0
+
+            f.write(
+                f"{src_name},{ra_src},{dec_src},{seed},{index},{RA_point},{DEC_point},{sim_rad},{t_in_point},{t_end_point},0\n")
+
+    #     # VISIBILITY PART
+    #     # choose between AUTO mode (use visibility) and MANUAL mode (manually insert IRF)
+    #     # simulation_mode = sim_in['IRF']['mode']
+    #     #
+    #     # if simulation_mode == "auto":
+    #     #     print("using visibility to get IRFs")
+    #     #
+    #     #     # GRB information from the fits header
+    #     #     ra = fits_header_0['RA']
+    #     #     dec = fits_header_0['DEC']
+    #     #     t0 = Time(fits_header_0['GRBJD'])
+    #     #
+    #     #     irf_dict = sim_in['IRF']
+    #     #     site = irf_dict['site']
+    #     #     obs_condition = Observability(site=site)
+    #     #     obs_condition.set_irf(irf_dict)
+    #     #
+    #     #     t_zero_mode = ctobss_params['time']['t_zero'].lower()
+    #     #     print("time starts when source becomes visible")
+    #     #     obs_condition.Proposal_obTime = 86400
+    #     #     condition_check = obs_condition.check(RA=ra, DEC=dec, t_start=t0)
+    #     #
+    #     # else:
+    #     #     print(f"wrong input for IRF - mode. Input is {simulation_mode}. Only 'AUTO' is supported in GW analysis")
+    #     #     sys.exit()
+    #
 
 
 if __name__ == '__main__':
@@ -482,5 +624,4 @@ if __name__ == '__main__':
         header_GRB = fits.open(fits_model_input)[0].header
         grb_simulation(sim_yaml_file, jobs_yaml_file, xml_model_input, header_GRB, realization_id)
     elif sim_yaml_file['source']['type'] == "GW":
-        print("WIP")
-        # gw_simulation(sim_yaml_file, jobs_yaml_file, sys.argv[3], sys.argv[4], sys.argv[5])
+        gw_simulation(sim_yaml_file, jobs_yaml_file, xml_model_input, fits_model_input, realization_id)

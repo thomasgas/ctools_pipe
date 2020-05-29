@@ -43,7 +43,7 @@ def create_models(input_yaml, jobs_yaml):
     elif models['type'] == "GW":
         list_run = models['run_gw']
         list_merger_id = models['merger_gw']
-        list_files = [f for f in glob.glob("../GW_PAPER/input/*.fits")
+        list_files = [f for f in glob.glob(f"{input_data}/input/*.fits")
                       if (int(f.split('run')[-1][:4]) in list_run) and
                       (int(f.split('run')[-1].split('.')[0][-4:]) in list_merger_id)]
     else:
@@ -157,6 +157,8 @@ def create_models(input_yaml, jobs_yaml):
                 if models['type'] == "GRB":
                     save_spectra = u.Quantity(spectra.field(counter), flux_unit_fits).to_value(flux_unit_ctools)
                 if models['type'] == "GW":
+                    if models['add_background'] is True:
+                        file.write("BKG CTAIrf 0 0 0 0 0 0 PL 1.0 0.0 0.3*TeV\n")
                     save_spectra = u.Quantity(spectra[counter], flux_unit_fits).to_value(flux_unit_ctools)
 
                 save_spectra = np.clip(save_spectra, a_min=1e-200, a_max=1.0)

@@ -1,0 +1,52 @@
+# this configuration file is used to configure the actual simulation of the source.
+# this simulation can be done only once the background(s) have(has) been simulated and
+# the models already created.
+# It will crash if the folders that are given as inputs for the data are found to be empty
+
+# If the mode is manual, the times of the simulations are those specified and the IRF is the one chosen.
+# If the mode is AUTO, the visibility of the source is taken into account. This affects:
+# - times can either be from the onset of the GRB or from the time at which the source is visible
+
+IRF:                                  # asterisc: mandatory  both for manual and auto
+  mode: manual                        # * auto --> use visibility condition; manual --> handpick IRF
+  prod:                               # * this is needed in any case. different MC prod --> different results
+    number: 3b                        # *
+    version: 2                        # * 0, 1 or 2
+  site: North
+  time: '0.5h'                        # * 0.5h is valid only for prod3-v2. otherwise use 30m
+  subarray: LST                       # * only for prod3b: LST/MST/SST/MSTSST/FULL/TS
+  TS: 0                               # * only for prod3b: 1 (yes), 0 (no). THRESHOLD ARRAY
+  zenith: 20                          # only for manual mode
+  pointing: average                   # only for manual mode
+
+# specify source type. If GW then the folder with the pointing files must be provided
+source:
+  type: GW                                # can be GW or GRB
+  pointings_path: $MAIN_FOLDER/pointings  # only for GW
+  run_gw: [16, 17,19, 19]
+  merger_gw: [340, 261, 70, 268]
+  max_sources: 5                         # for testing: limits the number of simulations to do
+
+# the actual parameters for the  simulation
+ctobssim:
+  realizations: 2                       # simulations to be done per each model
+  models_in:
+    xml_path: $MAIN_FOLDER/models       # input folder for the FITS files
+    fits_path: $MAIN_FOLDER/input       # output folder wih XML files for ctools
+  radius: 2.5                           # in degrees. useless to have a value larger than 5 (radius of SSTs fov)
+  energy:
+    e_min: 50 GeV
+    e_max: 5 TeV
+
+# detection
+ctlike:
+  counts: yes                         # simple Li&Ma (uses ctskymap RING method). to disable --> no.
+  pars_counts:                        # input parameters (see ctools documentation)
+    ra_center: 0
+    scale: 0.02                       # deg/pixel scale of the image
+    roiradius: 0.2
+    inradius: 0.6
+    outradius: 0.8
+    iterations: 3
+    threshold: 5
+output: $MAIN_FOLDER/output           # output folder for the results of the simulations

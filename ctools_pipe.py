@@ -216,30 +216,18 @@ if __name__ == '__main__':
         #     print("No fits model")
         #     sys.exit()
 
-        max_models = config_in['source']['max_sources']
-
         ctools_pipe_path = create_path(jobs_exe['exe']['software_path'])
 
-        # select IRF to choose the proper background folder
-        # irf = IRFPicker(config_in, ctools_pipe_path)
-        # name_irf = irf.irf_pick()
+        models = config_in['source']
 
-        # load backgrounds
-        # backgrounds_path = create_path(ctobssim_input['bckgrnd_path'])
-        # fits_background_list = glob.glob(f"{backgrounds_path}/{name_irf}/background*.fits")
-        # if len(fits_background_list) == 0:
-        #     print(f"No background for IRF {name_irf}")
-        #     sys.exit()
+        if models['type'] == "GW":
+            list_run = models['run_gw']
+            list_merger_id = models['merger_gw']
+            models_list = [f.split('/')[-1][:-5] for f in glob.glob(f"{fits_models_path}/*.fits")
+                           if (int(f.split('run')[-1][:4]) in list_run) and
+                           (int(f.split('run')[-1].split('.')[0][-4:]) in list_merger_id)]
 
-        if config_in['source']['type'] == "GW":
-            point_path = create_path(config_in['source']['pointings_path'])
-            event_list = pd.read_csv(glob.glob(f"{point_path}/BNS*.txt")[0], sep=" ")
-            events = event_list[:max_models]
-            runs = events['run']
-            mergers = events['MergerID']
-            IRF_zenith = events['Mean Altitude']
-            observatory = events['Observatory']
-            opt_point_path = f"{point_path}/optimized_pointings"
+        max_models = models['max_sources']
 
         if execution['mode'] == "local":
             # loop over the models

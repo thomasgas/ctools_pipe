@@ -1,0 +1,18 @@
+# for the creation of the models the "local" option should be enough.
+# It's not that memory computing intensive and save some work.
+
+models:
+  type: GW                         # can be GW or GRB
+  run_gw: [16, 17,19, 19]
+  merger_gw: [340, 261, 70, 268]
+  scaling: 1
+  add_background: yes              # background model is added here
+  pos:
+    ra: null                        # value in deg. null for None: will be extracted from fits header
+    dec: null                       # value in deg. null for None: will be extracted from fits header
+  input_data:
+    path: $MAIN_FOLDER
+    version: 0                      # 0 is an example file sent by Lara to Franz (Event0.fits)
+  output: null                    # $MAIN_FOLDER/models. null for None. Default is "models"
+  max_models: 10                  # type null if all models have to be processed
+  overwrite: yes                     # yes --> re-create models. no --> keep already created models
