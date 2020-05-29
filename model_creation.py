@@ -150,6 +150,9 @@ def create_models(input_yaml, jobs_yaml):
             DEC = models['pos']['dec']
 
         with open(model_title, 'w') as file:
+            if models['type'] == "GW" and models['add_background'] is True:
+                file.write("BKG CTAIrf 0 0 0 0 0 0 PL 1.0 0.0 0.3*TeV\n")
+
             for counter, (time_in, time_out) in enumerate(zip(times[:-1], times[1:])):
                 fits_name = f"{model_folder}/{src_name}/lightcv/lc_{str(counter).zfill(3)}_tin-{time_in:.3f}_tend-{time_out:.3f}.fits"
                 spec_name = f"{model_folder}/{src_name}/spectra/spec_{str(counter).zfill(3)}_tin-{time_in:.3f}_tend-{time_out:.3f}.txt"
@@ -157,8 +160,6 @@ def create_models(input_yaml, jobs_yaml):
                 if models['type'] == "GRB":
                     save_spectra = u.Quantity(spectra.field(counter), flux_unit_fits).to_value(flux_unit_ctools)
                 if models['type'] == "GW":
-                    if models['add_background'] is True:
-                        file.write("BKG CTAIrf 0 0 0 0 0 0 PL 1.0 0.0 0.3*TeV\n")
                     save_spectra = u.Quantity(spectra[counter], flux_unit_fits).to_value(flux_unit_ctools)
 
                 save_spectra = np.clip(save_spectra, a_min=1e-200, a_max=1.0)
