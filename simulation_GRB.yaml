@@ -19,10 +19,9 @@ IRF:                                  # asterisc: mandatory  both for manual and
   zenith: 20                          # only for manual mode
   pointing: average                   # only for manual mode
 
-# specify source type. If GW then the folder with the pointing files must be provided
+# specify source type
 source:
   type: GRB                               # can be GW or GRB
-  pointings_path: $MAIN_FOLDER/pointings  # only for GW
   max_sources: 1                          # for testing: limits the number of simulations to do
 
 # the actual parameters for the  simulation
