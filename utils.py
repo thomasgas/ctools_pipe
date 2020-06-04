@@ -196,7 +196,7 @@ class Observability:
 
             IRFstruct = {'IRF': {'prod': {'number': self.prod, 'version': self.prod_version},
                                  'zenith': zenithIRF,
-                                 'site': 'North',
+                                 'site': self.site,
                                  'time': self.window,
                                  'pointing': pointingIRF,
                                  'subarray': self.subarray,
