@@ -32,6 +32,8 @@ ctobssim:
     xml_path: $MAIN_FOLDER/models       # input folder for the FITS files
     fits_path: $MAIN_FOLDER/input       # output folder wih XML files for ctools
   radius: 5                             # in degrees. useless to have a value larger than 5 (radius of SSTs fov)
+  save_simulation: yes                # yes: simulation saved and analysis stopped. no: full chain on disk
+  output_path: $MAIN_FOLDER/eventlist
 
 # VIS --> time zero is when the source becomes visible. ONSET --> from the onset of the GRB (visible or not)
 # If the IRF mode is MANUAL, time is "ONSET"

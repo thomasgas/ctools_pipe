@@ -27,8 +27,8 @@ def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
     :return: significance obtained with the activated detection methods
     """
 
-    grb_name = model_xml.split('/')[-1].split('_')[1][:-4]
-    print(grb_name, counter)
+    src_name = model_xml.split('/')[-1].split('_')[1][:-4]
+    print(src_name, counter)
 
     ctools_pipe_path = create_path(config_in['exe']['software_path'])
     ctobss_params = sim_in['ctobssim']
@@ -42,9 +42,11 @@ def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
     sim_e_max = u.Quantity(ctobss_params['energy']['e_max']).to_value(u.TeV)
     sim_rad = ctobss_params['radius']
 
-    output_path = create_path(sim_in['output'] + '/' + grb_name)
+    output_path = create_path(sim_in['output'] + '/' + src_name)
 
-    with open(f"{output_path}/GRB-{grb_name}_seed-{seed}.txt", "w") as f:
+    save_simulation = ctobss_params['save_simulation']
+
+    with open(f"{output_path}/GRB-{src_name}_seed-{seed}.txt", "w") as f:
         f.write(f"GRB,seed,time_start,time_end,sigma_lima,sqrt_TS_onoff,sqrt_TS_std\n")
         # VISIBILITY PART
         # choose between AUTO mode (use visibility) and MANUAL mode (manually insert IRF)
@@ -81,7 +83,7 @@ def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
 
             # NO IRF in AUTO mode ==> No simulation! == EXIT!
             if len(condition_check) == 0:
-                f.write(f"{grb_name},{seed}, -1, -1, -1, -1, -1\n")
+                f.write(f"{src_name},{seed}, -1, -1, -1, -1, -1\n")
                 sys.exit()
 
         elif simulation_mode == "manual":
@@ -142,6 +144,19 @@ def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
         # append all background events to GRB ones ==> there's just one observation and not two
         for event in obs_back.events():
             obs[0].events().append(event)
+
+        # ctselect to save data on disk
+        if save_simulation:
+            select_time = ctools.ctselect(obs)
+            select_time['rad'] = sim_rad
+            select_time['tmin'] = sim_t_min
+            select_time['tmax'] = sim_t_max
+            select_time['emin'] = sim_e_min
+            select_time['emax'] = sim_e_max
+            event_list_path = create_path(f"{ctobss_params['output_path']}/{src_name}/seed-{seed:03}/")
+            sim['outobs'] = f"{event_list_path}/event_list_source-{src_name}_seed-{seed:03}.fits"
+            select_time.execute()
+            sys.exit()
 
         # delete all 70+ models from the obs def file...not needed any more
         obs.models(gammalib.GModels())
@@ -385,7 +400,7 @@ def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
                     expplaw['CutoffEnergy'].value(80e3)
 
                     if key == "onoff":
-                        selected_data.models()[0].name(grb_name)
+                        selected_data.models()[0].name(src_name)
                         selected_data.models()[0].tscalc(True)
                         selected_data.models()[0].spectral(expplaw.copy())
 
@@ -451,7 +466,7 @@ def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
                     # print(f"E_cut_off {key}: {E_cut_off:.2f} +- {E_cut_off_error:.2f}")
                 del dict_pl_ctlike_out
 
-            f.write(f"{grb_name},{seed},{t_in:.2f},{t_end:.2f},{sigma_onoff:.2f},{sqrt_ts_like_onoff:.2f},{sqrt_ts_like_std:.2f}\n")
+            f.write(f"{src_name},{seed},{t_in:.2f},{t_end:.2f},{sigma_onoff:.2f},{sqrt_ts_like_onoff:.2f},{sqrt_ts_like_std:.2f}\n")
             del dict_obs_select_time
             del select_time
 
