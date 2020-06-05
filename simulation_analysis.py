@@ -16,6 +16,15 @@ from astropy.time import Time
 import pandas as pd
 
 
+def sort_background(input_background_list):
+    """
+    simple function to sort the background files according to the number of the file
+    :param input_background_list: list of background events from glob.glob
+    :return: the ordered list of files
+    """
+    return input_background_list.split('_')[-2]
+
+
 def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
     """
     Function to handle the GRB simulation.
@@ -101,6 +110,7 @@ def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
                 print(f"No background for IRF {name_irf}")
                 sys.exit()
 
+            fits_background_list = sorted(fits_background_list, key=sort_background)
             background_fits = fits_background_list[int(counter) - 1]
             obs_back = gammalib.GCTAObservation(background_fits)
 
