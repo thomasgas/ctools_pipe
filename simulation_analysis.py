@@ -508,8 +508,8 @@ def gw_simulation(sim_in, config_in, model_xml, fits_model, counter):
         for index in range(0, len(pointing_data) - 1):
             RA_point = RA_data[index]
             DEC_point = DEC_data[index]
-            t_in_point = Time(times[index]) + 2 * 1 * u.hour
-            t_end_point = Time(times[index + 1]) + 2 * 1 * u.hour
+            t_in_point = Time(times[index])
+            t_end_point = Time(times[index + 1])
 
             obs_condition = Observability(site=site)
             obs_condition.set_irf(irf_dict)
