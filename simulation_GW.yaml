@@ -37,6 +37,8 @@ ctobssim:
   energy:
     e_min: 50 GeV
     e_max: 5 TeV
+  save_simulation: yes                # yes: simulation saved and analysis stopped. no: full chain on disk
+  output_path: $MAIN_FOLDER/eventlist
 
 detection:
   counts: yes                         # uses ctskymap RING method. to disable --> no.

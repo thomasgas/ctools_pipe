@@ -493,7 +493,13 @@ def gw_simulation(sim_in, config_in, model_xml, fits_model, counter):
     irf_dict = sim_in['IRF']
     site = irf_dict['site']
 
-    with open(f"{output_path}/GW-{src_name}_seed-{seed}_site-{site}.txt", "w") as f:
+    detection = sim_in['detection']
+    significance_map = detection['counts']
+    srcdetect_ctlike = detection['detect_like']
+
+    save_simulation = ctobss_params['save_simulation']
+
+    with open(f"{output_path}/GW-{src_name}_seed-{seed:03}_site-{site}.txt", "w") as f:
         f.write(f"GW_name,RA_src,DEC_src,seed,pointing_id,ra_point,dec_point,radius,time_start,time_end,sigma\n")
         run_id, merger_id = src_name.split('_')
         pointing_data = pd.read_csv(
@@ -545,7 +551,14 @@ def gw_simulation(sim_in, config_in, model_xml, fits_model, counter):
             sim['emin'] = sim_e_min
             sim['emax'] = sim_e_max
             sim['seed'] = seed
-            sim.run()
+
+            if save_simulation:
+                event_list_path = create_path(f"{ctobss_params['output_path']}/{src_name}/seed-{seed:03}/")
+                sim['outevents'] = f"{event_list_path}/event_list_source-{src_name}_seed-{seed:03}_pointingID-{index}.fits"
+                sim.execute()
+                continue
+            else:
+                sim.run()
 
             obs = sim.obs()
             # ctskymap
