@@ -187,7 +187,7 @@ def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
         # ----- TIME LOOP STARTS HERE --------
         # ------------------------------------
 
-        ctlike_mode = sim_in['ctlike']
+        ctlike_mode = sim_in['detection']
         mode_1 = ctlike_mode['counts']
         mode_2 = ctlike_mode['ctlike-onoff']
         mode_3 = ctlike_mode['ctlike-std']
@@ -549,7 +549,6 @@ def gw_simulation(sim_in, config_in, model_xml, fits_model, counter):
 
             obs = sim.obs()
             # ctskymap
-
 
             skymap = ctools.ctskymap(obs)
             skymap['proj'] = 'CAR'

@@ -50,7 +50,7 @@ ctselect:
     t_slices: 2                       # 0 --> keep all time interval...t_min and t_max are ignored
 
 # detection methods implemented: counts, ctlike-onoff and ctlike-std
-ctlike:
+detection:
   counts: yes                         # simple Li&Ma (uses ctskymap RING method). to disable --> no.
   pars_counts:                        # input parameters (see ctools documentation)
     ra_center: 0

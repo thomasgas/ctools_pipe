@@ -38,9 +38,8 @@ ctobssim:
     e_min: 50 GeV
     e_max: 5 TeV
 
-# detection
-ctlike:
-  counts: yes                         # simple Li&Ma (uses ctskymap RING method). to disable --> no.
+detection:
+  counts: yes                         # uses ctskymap RING method. to disable --> no.
   pars_counts:                        # input parameters (see ctools documentation)
     ra_center: 0
     scale: 0.02                       # deg/pixel scale of the image
@@ -49,4 +48,5 @@ ctlike:
     outradius: 0.8
     iterations: 3
     threshold: 5
+  detect_like: yes
 output: $MAIN_FOLDER/output           # output folder for the results of the simulations
