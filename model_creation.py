@@ -114,18 +114,17 @@ def create_models(input_yaml, jobs_yaml):
         header_time = src_input['TIMES'].header
         time_unit_ctools = u.s
 
-        if source_type == "GRB":
-            if phase == "prompt":
-                time_unit_fits = u.Unit(header_time['UNIT'])
-                times = u.Quantity(
-                    src_input['TIMES'].data['time'],
-                    time_unit_fits
-                ).to_value(time_unit_ctools)
-                energy_unit_fits = u.Unit(header_en['UNIT'])
-                energies = u.Quantity(
-                    src_input['ENERGIES'].data['energy'],
-                    energy_unit_fits
-                ).to_value(energy_unit_ctools)
+        if source_type == "GRB" and phase == "prompt":
+            time_unit_fits = u.Unit(header_time['UNIT'])
+            times = u.Quantity(
+                src_input['TIMES'].data['time'],
+                time_unit_fits
+            ).to_value(time_unit_ctools)
+            energy_unit_fits = u.Unit(header_en['UNIT'])
+            energies = u.Quantity(
+                src_input['ENERGIES'].data['energy'],
+                energy_unit_fits
+            ).to_value(energy_unit_ctools)
         else:
             time_unit_fits = u.Unit(header_time['TUNIT1'])
             times = u.Quantity(
@@ -156,9 +155,8 @@ def create_models(input_yaml, jobs_yaml):
             print(f"{source_type} is a wrong input type...")
             sys.exit()
 
-        if source_type == "GRB":
-            if phase == "prompt":
-                flux_unit_fits = u.Unit(header_spec['UNIT']) * u.ph
+        if source_type == "GRB" and phase == "prompt":
+            flux_unit_fits = u.Unit(header_spec['UNIT']) * u.ph
         else:
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore', UnitsWarning)
