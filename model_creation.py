@@ -26,28 +26,37 @@ def create_models(input_yaml, jobs_yaml):
     input_data = create_path(models['input_data']['path'])
     output_data = create_path(jobs_in['exe']['path'])
 
+    source_type = models['type']
+
+    if source_type == "GRB":
+        phase = models['phase']
+        if models['phase'] not in ["afterglow", "prompt"]:
+            print(f"phase named {phase} in GRB simulation is not supported. Check typo?")
+            sys.exit()
+
     if models['output'] is None:
-        model_folder = f"{output_data}/models"
+        if source_type == "GRB":
+            model_folder = f"{output_data}/models/{phase}"
     else:
         model_folder = f"{create_path(models['output'])}"
 
     try:
-        os.mkdir(model_folder)
+        os.makedirs(model_folder)
     except FileExistsError:
         print(f'{model_folder} already created. will be use for output source models')
 
     max_models = models['max_models']
 
-    if models['type'] == "GRB":
-        list_files = glob.glob(f"{input_data}/input/*fits")[:max_models]
-    elif models['type'] == "GW":
+    if source_type == "GRB":
+        list_files = glob.glob(f"{input_data}/input/{phase}/*fits")[:max_models]
+    elif source_type == "GW":
         list_run = models['run_gw']
         list_merger_id = models['merger_gw']
         list_files = [f for f in glob.glob(f"{input_data}/input/*.fits")
                       if (int(f.split('run')[-1][:4]) in list_run) and
                       (int(f.split('run')[-1].split('.')[0][-4:]) in list_merger_id)]
     else:
-        print(f"{models['type']} not supported...use 'GW' or 'GRB'")
+        print(f"{source_type} not supported...use 'GW' or 'GRB'")
         sys.exit()
 
     # create example fits
@@ -100,39 +109,60 @@ def create_models(input_yaml, jobs_yaml):
         header_prim = src_input['PRIMARY'].header
 
         header_en = src_input['ENERGIES'].header
-
-        # energies (with proper units)
-        energy_unit_fits = u.Unit(header_en['TUNIT1'])
         energy_unit_ctools = u.MeV
-        energies = u.Quantity(
-            src_input['ENERGIES'].data['Energies'],
-            energy_unit_fits
-        ).to_value(energy_unit_ctools)
 
-        # times (with proper units)
         header_time = src_input['TIMES'].header
-        time_unit_fits = u.Unit(header_time['TUNIT1'])
         time_unit_ctools = u.s
-        times = u.Quantity(
-            src_input['TIMES'].data['Times'],
-            time_unit_fits
-        ).to_value(time_unit_ctools)
+
+        if source_type == "GRB":
+            if phase == "prompt":
+                time_unit_fits = u.Unit(header_time['UNIT'])
+                times = u.Quantity(
+                    src_input['TIMES'].data['time'],
+                    time_unit_fits
+                ).to_value(time_unit_ctools)
+                energy_unit_fits = u.Unit(header_en['UNIT'])
+                energies = u.Quantity(
+                    src_input['ENERGIES'].data['energy'],
+                    energy_unit_fits
+                ).to_value(energy_unit_ctools)
+        else:
+            time_unit_fits = u.Unit(header_time['TUNIT1'])
+            times = u.Quantity(
+                src_input['TIMES'].data['Times'],
+                time_unit_fits
+            ).to_value(time_unit_ctools)
+
+            energy_unit_fits = u.Unit(header_en['TUNIT1'])
+            energies = u.Quantity(
+                src_input['ENERGIES'].data['Energies'],
+                energy_unit_fits
+            ).to_value(energy_unit_ctools)
 
         # Units will be added during the loop otherwise it's too slow
         # GRB need to spectra absorbed with EBL...GW are closer to us so no EBL is absorption is needed
-        if models['type'] == "GRB":
-            header_spec = src_input['EBL-ABS. SPECTRA'].header
-            spectra = src_input['EBL-ABS. SPECTRA'].data
-        elif models['type'] == "GW":
+        if source_type == "GRB":
+            if phase == "afterglow":
+                header_spec = src_input['EBL-ABS. SPECTRA'].header
+                spectra = src_input['EBL-ABS. SPECTRA'].data
+            elif phase == "prompt":
+                header_spec = src_input['SPECTRA'].header
+                spectra = src_input['SPECTRA'].data
+
+        elif source_type == "GW":
             header_spec = src_input['SPECTRA'].header
             spectra = src_input['SPECTRA'].data
         else:
-            print(f"{models['type']} is a wrong input type...")
+            print(f"{source_type} is a wrong input type...")
             sys.exit()
 
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore', UnitsWarning)
-            flux_unit_fits = u.Unit(header_spec['UNITS'])
+        if source_type == "GRB":
+            if phase == "prompt":
+                flux_unit_fits = u.Unit(header_spec['UNIT']) * u.ph
+        else:
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore', UnitsWarning)
+                flux_unit_fits = u.Unit(header_spec['UNITS'])
 
         flux_unit_ctools = u.Unit('ph / (MeV * s *cm^2)')
 
@@ -150,16 +180,16 @@ def create_models(input_yaml, jobs_yaml):
             DEC = models['pos']['dec']
 
         with open(model_title, 'w') as file:
-            if models['type'] == "GW" and models['add_background'] is True:
+            if source_type == "GW" and models['add_background'] is True:
                 file.write("BKG CTAIrf 0 0 0 0 0 0 PL 1.0 0.0 0.3*TeV\n")
 
             for counter, (time_in, time_out) in enumerate(zip(times[:-1], times[1:])):
                 fits_name = f"{model_folder}/{src_name}/lightcv/lc_{str(counter).zfill(3)}_tin-{time_in:.3f}_tend-{time_out:.3f}.fits"
                 spec_name = f"{model_folder}/{src_name}/spectra/spec_{str(counter).zfill(3)}_tin-{time_in:.3f}_tend-{time_out:.3f}.txt"
 
-                if models['type'] == "GRB":
+                if source_type == "GRB":
                     save_spectra = u.Quantity(spectra.field(counter), flux_unit_fits).to_value(flux_unit_ctools)
-                if models['type'] == "GW":
+                if source_type == "GW":
                     save_spectra = u.Quantity(spectra[counter], flux_unit_fits).to_value(flux_unit_ctools)
 
                 save_spectra = np.clip(save_spectra, a_min=1e-200, a_max=1.0)

@@ -164,7 +164,7 @@ def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
             select_time['emin'] = sim_e_min
             select_time['emax'] = sim_e_max
             event_list_path = create_path(f"{ctobss_params['output_path']}/{src_name}/")
-            sim['outobs'] = f"{event_list_path}/event_list_source-{src_name}_seed-{seed:03}.fits"
+            select_time['outobs'] = f"{event_list_path}/event_list_source-{src_name}_seed-{seed:03}.fits"
             select_time.execute()
             sys.exit()
 
