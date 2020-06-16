@@ -36,7 +36,7 @@ def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
     :return: significance obtained with the activated detection methods
     """
 
-    src_name = model_xml.split('/')[-1].split('_')[1][:-4]
+    src_name = model_xml.split('/')[-1].split('model_')[1][:-4]
     print(src_name, counter)
 
     ctools_pipe_path = create_path(config_in['exe']['software_path'])
@@ -51,7 +51,15 @@ def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
     sim_e_max = u.Quantity(ctobss_params['energy']['e_max']).to_value(u.TeV)
     sim_rad = ctobss_params['radius']
 
-    output_path = create_path(sim_in['output'] + '/' + src_name)
+    models = sim_in['source']
+    source_type = models['type']
+
+    if source_type == "GRB":
+        phase_path = "/" + models['phase']
+    elif source_type == "GW":
+        phase_path = ""
+
+    output_path = create_path(sim_in['output']['path'] + phase_path + '/' + src_name)
 
     save_simulation = ctobss_params['save_simulation']
 
