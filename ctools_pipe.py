@@ -200,8 +200,26 @@ if __name__ == '__main__':
         ctobssim_input = config_in['ctobssim']
         realizations = ctobssim_input['realizations']
 
+        models = config_in['source']
+        source_type = models['type']
+
+        # phase path is used for grbs where afterglow and prompt input/models/output is split into two
+        # TODO: if you want to combine prompt and afterglow models in one simulation, remove this part
+        # TODO: everything can be handled from the configuration file, changing the paths accordingly
+        if source_type == "GRB":
+            phase = models['phase']
+            if phase not in ["afterglow", "prompt"]:
+                print(f"phase named {phase} in GRB simulation is not supported. Check typo?")
+                sys.exit()
+            else:
+                phase_path = phase + "/"
+        elif source_type == "GW":
+            phase_path = ""
+        else:
+            print(f"source {source_type} wrong. Check typo?")
+
         # load models
-        xml_models_path = create_path(ctobssim_input['models_in']['xml_path'])
+        xml_models_path = create_path(ctobssim_input['models_in']['xml_path'] + '/' + phase_path)
         if len(glob.glob(f"{xml_models_path}/*")) == 0:
             print("No input model")
             sys.exit()
@@ -210,15 +228,9 @@ if __name__ == '__main__':
         models_list = os.listdir(xml_models_path)
 
         # load fits files for visibility checks
-        fits_models_path = create_path(ctobssim_input['models_in']['fits_path'])
-        # fits_models_list = glob.glob(f"{fits_models_path}/*")
-        # if len(fits_models_list) == 0:
-        #     print("No fits model")
-        #     sys.exit()
+        fits_models_path = create_path(ctobssim_input['models_in']['fits_path'] + '/' + phase_path)
 
         ctools_pipe_path = create_path(jobs_exe['exe']['software_path'])
-
-        models = config_in['source']
 
         if models['type'] == "GW":
             list_run = models['run_gw']
