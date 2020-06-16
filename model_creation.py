@@ -178,7 +178,7 @@ def create_models(input_yaml, jobs_yaml):
             DEC = models['pos']['dec']
 
         with open(model_title, 'w') as file:
-            if source_type == "GW" and models['add_background'] is True:
+            if models['add_background'] is True:
                 file.write("BKG CTAIrf 0 0 0 0 0 0 PL 1.0 0.0 0.3*TeV\n")
 
             for counter, (time_in, time_out) in enumerate(zip(times[:-1], times[1:])):

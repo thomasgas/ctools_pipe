@@ -5,6 +5,7 @@ models:
   type: GRB                         # can be GW or GRB
   phase: afterglow                   # prompt OR afterglow: choose one
   scaling: 1
+  add_background: no              # background model is added here
   pos:
     ra: 0                        # value in deg. null for None: will be extracted from fits header
     dec: 0.5                       # value in deg. null for None: will be extracted from fits header
