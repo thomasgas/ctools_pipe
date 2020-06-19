@@ -221,7 +221,7 @@ if __name__ == '__main__':
         # load models
         xml_models_path = create_path(ctobssim_input['models_in']['xml_path'] + '/' + phase_path)
         if len(glob.glob(f"{xml_models_path}/*")) == 0:
-            print("No input model")
+            print("No input model. Create models first and then run the simulation.")
             sys.exit()
 
         # just the names of the models without the path: to be used also for fits files

@@ -37,6 +37,8 @@ def create_models(input_yaml, jobs_yaml):
     if models['output'] is None:
         if source_type == "GRB":
             model_folder = f"{output_data}/models/{phase}"
+        else:
+            model_folder = f"{output_data}/models"
     else:
         model_folder = f"{create_path(models['output'])}"
 
