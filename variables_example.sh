@@ -1,4 +1,5 @@
-export MAIN_FOLDER=/home/thomas/Documenti/GRB_PAPER
+# export MAIN_FOLDER=/home/thomas/Documenti/GRB_PAPER
+export MAIN_FOLDER=/home/thomas/Documenti/GW_PAPER
 export CTOOLS_PIPE=/home/thomas/Documenti/ctools_pipe
 
 # export CONDA_PATH=/lapp_data/cta/gasparetto/miniconda3

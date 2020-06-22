@@ -14,6 +14,7 @@ import glob
 from utils import Observability
 from astropy.time import Time
 import pandas as pd
+from astropy.coordinates import SkyCoord
 
 
 def sort_background(input_background_list):
@@ -501,10 +502,13 @@ def gw_simulation(sim_in, config_in, model_xml, fits_model, counter):
     """
 
     src_name = fits_model.split("/")[-1][:-5]
+    run_id, merger_id = src_name.split('_')
 
     fits_header_0 = fits.open(fits_model)[0].header
     ra_src = fits_header_0['RA']
     dec_src = fits_header_0['DEC']
+
+    coordinate_source = SkyCoord(ra=ra_src * u.deg, dec=dec_src * u.deg, frame="icrs")
 
     src_yaml = sim_in['source']
 
@@ -521,34 +525,57 @@ def gw_simulation(sim_in, config_in, model_xml, fits_model, counter):
     sim_e_max = u.Quantity(ctobss_params['energy']['e_max']).to_value(u.TeV)
 
     sim_rad = ctobss_params['radius']
-    output_path = create_path(sim_in['output'] + '/' + src_name)
+    output_path = create_path(sim_in['output']['path'] + f"/{src_name}/seed-{seed:03}")
 
     irf_dict = sim_in['IRF']
     site = irf_dict['site']
 
     detection = sim_in['detection']
-    significance_map = detection['counts']
-    srcdetect_ctlike = detection['detect_like']
+    significance_map = detection['skymap_significance']
+    srcdetect_ctlike = detection['srcdetect_likelihood']
 
     save_simulation = ctobss_params['save_simulation']
 
-    with open(f"{output_path}/GW-{src_name}_seed-{seed:03}_site-{site}.txt", "w") as f:
-        f.write(f"GW_name,RA_src,DEC_src,seed,pointing_id,ra_point,dec_point,radius,time_start,time_end,sigma\n")
-        run_id, merger_id = src_name.split('_')
-        pointing_data = pd.read_csv(
-            f"{opt_point_path}/{run_id}_Merger{merger_id}_SuggestedPointings_GWOptimisation_test.txt", header=0,
+    try:
+        mergers_data = pd.read_csv(
+            f"{point_path}/BNS-GW-Time_onAxis5deg_postRome.txt",
             sep=" ")
+    except FileNotFoundError:
+        print("merger data not present. check!")
+        sys.exit()
+
+    filter_mask = (mergers_data["run"] == run_id) & (mergers_data["MergerID"] == f"Merger{merger_id}")
+    merger_onset_data = mergers_data[filter_mask]
+    time_onset_merger = merger_onset_data['Time'].values[0]
+
+    with open(f"{output_path}/GW-{src_name}_seed-{seed:03}_site-{site}.txt", "w") as f:
+        f.write(f"GW_name\tRA_src\tDEC_src\tseed\tpointing_id\tsrc_to_point\tsrc_in_point\tra_point\tdec_point\tradius\ttime_start\ttime_end\tsignificanceskymap\tsigmasrcdetectctlike\n")
+        try:
+            pointing_data = pd.read_csv(
+                f"{opt_point_path}/SuggestedPointings_GWOptimisation_{run_id}_Merger{merger_id}.txt",
+                header=0,
+                sep=" ")
+        except FileNotFoundError:
+            print("File not found\n")
+            sys.exit()
 
         RA_data = pointing_data['RA(deg)']
         DEC_data = pointing_data['DEC(deg)']
         times = pointing_data['Observation Time UTC']
+        durations = pointing_data['Duration']
 
         # LOOP OVER POINTINGS
         for index in range(0, len(pointing_data) - 1):
             RA_point = RA_data[index]
             DEC_point = DEC_data[index]
+            coordinate_pointing = SkyCoord(
+                ra=RA_point * u.degree,
+                dec=DEC_point * u.degree,
+                frame="icrs"
+            )
+            src_from_pointing = coordinate_pointing.separation(coordinate_source)
+
             t_in_point = Time(times[index])
-            t_end_point = Time(times[index + 1])
 
             obs_condition = Observability(site=site)
             obs_condition.set_irf(irf_dict)
@@ -557,9 +584,14 @@ def gw_simulation(sim_in, config_in, model_xml, fits_model, counter):
             obs_condition.Steps_observability = 10
             condition_check = obs_condition.check(RA=RA_point, DEC=DEC_point, t_start=t_in_point)
 
+            # once the IRF has been chosen, the times are shifted
+            # this is a quick and dirty solution to handle the times in ctools...not elegant for sure
+            t_in_point = (Time(times[index]) - Time(time_onset_merger)).to(u.s)
+            t_end_point = t_in_point + durations[index] * u.s
+
             if len(condition_check) == 0:
                 f.write(
-                    f"{src_name},{ra_src},{dec_src},{seed},{index},{RA_point},{DEC_point},{sim_rad},{t_in_point},{t_end_point}, -1\n")
+                    f"{src_name}\t{ra_src}\t{dec_src}\t{seed}\t{index}\t{src_from_pointing.value:.2f}\t{src_from_pointing.value < sim_rad}\t{RA_point}\t{DEC_point}\t{sim_rad}\t{t_in_point.value:.2f}\t{t_end_point.value:.2f}\t -1 \t -1\n")
                 continue
 
             name_irf = condition_check['IRF_name'][0]
@@ -589,72 +621,143 @@ def gw_simulation(sim_in, config_in, model_xml, fits_model, counter):
                 event_list_path = create_path(f"{ctobss_params['output_path']}/{src_name}/seed-{seed:03}/")
                 sim['outevents'] = f"{event_list_path}/event_list_source-{src_name}_seed-{seed:03}_pointingID-{index}.fits"
                 sim.execute()
+                f.write(
+                    f"{src_name}\t{ra_src}\t{dec_src}\t{seed}\t{index}\t{src_from_pointing.value:.2f}\t{src_from_pointing.value < sim_rad}\t{RA_point}\t{DEC_point}\t{sim_rad}\t{t_in_point.value:.2f}\t{t_end_point.value:.2f}\t -1 \t -1\n"
+                )
                 continue
             else:
                 sim.run()
 
             obs = sim.obs()
+
+            obs.models(gammalib.GModels())
+
             # ctskymap
 
-            skymap = ctools.ctskymap(obs)
-            skymap['proj'] = 'CAR'
-            skymap['coordsys'] = 'CEL'
-            skymap['xref'] = RA_point
-            skymap['yref'] = DEC_point
-            skymap['binsz'] = 0.02
-            skymap['nxpix'] = 200
-            skymap['nypix'] = 200
-            skymap['emin'] = sim_e_min
-            skymap['emax'] = sim_e_max
-            skymap['bkgsubtract'] = 'NONE'
-            skymap.run()
+            sigma_onoff = -1
+            sqrt_ts_like = -1
 
-            # cssrcdetect
-            srcdetect = cscripts.cssrcdetect(skymap.skymap().copy())
-            srcdetect['srcmodel'] = 'POINT'
-            srcdetect['bkgmodel'] = 'NONE'  # we will determine the background model in a later step
-            srcdetect['threshold'] = 5
-            srcdetect['corr_rad'] = 0.1
-            srcdetect.run()
+            if significance_map:
+                pars_skymap = detection['parameters_skymap']
+                scale = float(pars_skymap['scale'])
+                npix = 2 * int(sim_rad / scale)
 
-            models = srcdetect.models()
-            if len(models) > 0:
-                hotspot = models['Src001']
-                ra_hotspot = hotspot['RA'].value()
-                dec_hotspot = hotspot['DEC'].value()
-            else:
-                ra_hotspot = 0
-                dec_hotspot = 0
+                fits_temp_title = f"{output_path}/GW-skymap_point-{index}_{seed}.fits"
+
+                skymap = ctools.ctskymap(obs.copy())
+                skymap['proj'] = 'CAR'
+                skymap['coordsys'] = 'CEL'
+                skymap['xref'] = RA_point
+                skymap['yref'] = DEC_point
+                skymap['binsz'] = scale
+                skymap['nxpix'] = npix
+                skymap['nypix'] = npix
+                skymap['emin'] = sim_e_min
+                skymap['emax'] = sim_e_max
+                skymap['bkgsubtract'] = 'RING'
+                skymap['roiradius'] = pars_skymap['roiradius']
+                skymap['inradius'] = pars_skymap['inradius']
+                skymap['outradius'] = pars_skymap['outradius']
+                skymap['iterations'] = pars_skymap['iterations']
+                skymap['threshold'] = pars_skymap['threshold']
+                skymap['outmap'] = fits_temp_title
+                skymap.execute()
+
+                input_fits = fits.open(fits_temp_title)
+                datain = input_fits['SIGNIFICANCE'].data
+                datain[np.isnan(datain)] = 0.0
+                datain[np.isinf(datain)] = 0.0
+
+                sigma_onoff = np.max(datain)
+
+                if pars_skymap['remove_fits']:
+                    os.remove(fits_temp_title)
+
+            if srcdetect_ctlike:
+                pars_detect = detection['parameters_detect']
+                scale = float(pars_detect['scale'])
+                npix = 2 * int(sim_rad / scale)
+
+                skymap = ctools.ctskymap(obs.copy())
+                skymap['proj'] = 'TAN'
+                skymap['coordsys'] = 'CEL'
+                skymap['xref'] = RA_point
+                skymap['yref'] = DEC_point
+                skymap['binsz'] = scale
+                skymap['nxpix'] = npix
+                skymap['nypix'] = npix
+                skymap['emin'] = sim_e_min
+                skymap['emax'] = sim_e_max
+                skymap['bkgsubtract'] = 'NONE'
+                skymap.run()
+
+                # cssrcdetect
+                srcdetect = cscripts.cssrcdetect(skymap.skymap().copy())
+                srcdetect['srcmodel'] = 'POINT'
+                srcdetect['bkgmodel'] = 'NONE'
+                srcdetect['threshold'] = pars_detect['threshold']
+                srcdetect['corr_rad'] = pars_detect['correlation']
+                srcdetect.run()
+
+                models = srcdetect.models()
+
+                # if there's some detection we can do the likelihood.
+                # Spectral model is a PL and the spatial model is the one from cssrcdetect
+                if len(models) > 0:
+                    hotspot = models['Src001']
+                    ra_hotspot = hotspot['RA'].value()
+                    dec_hotspot = hotspot['DEC'].value()
+
+                    models_ctlike = gammalib.GModels()
+
+                    src_dir = gammalib.GSkyDir()
+                    src_dir.radec_deg(ra_hotspot, dec_hotspot)
+                    spatial = gammalib.GModelSpatialPointSource(src_dir)
+
+                    spectral = gammalib.GModelSpectralPlaw()
+                    spectral['Prefactor'].value(5.5e-16)
+                    spectral['Prefactor'].scale(1e-16)
+                    spectral['Index'].value(-2.6)
+                    spectral['Index'].scale(-1.0)
+                    spectral['PivotEnergy'].value(50000)
+                    spectral['PivotEnergy'].scale(1e3)
+
+                    model_src = gammalib.GModelSky(spatial, spectral)
+                    model_src.name('PL_fit_GW')
+                    model_src.tscalc(True)
+
+                    models_ctlike.append(model_src)
+
+                    spectral_back = gammalib.GModelSpectralPlaw()
+                    spectral_back['Prefactor'].value(1.0)
+                    spectral_back['Prefactor'].scale(1.0)
+                    spectral_back['Index'].value(0)
+                    spectral_back['PivotEnergy'].value(300000)
+                    spectral_back['PivotEnergy'].scale(1e6)
+
+                    back_model = gammalib.GCTAModelIrfBackground()
+                    back_model.instruments('CTA')
+                    back_model.name('Background')
+                    back_model.spectral(spectral_back.copy())
+                    models_ctlike.append(back_model)
+
+                    xmlmodel_PL_ctlike_std = f"{output_path}/model_PL_ctlike_std_seed-{seed}_pointing-{index}.xml"
+                    models_ctlike.save(xmlmodel_PL_ctlike_std)
+
+                    like_pl = ctools.ctlike(obs.copy())
+                    like_pl['inmodel'] = xmlmodel_PL_ctlike_std
+                    like_pl['caldb'] = caldb
+                    like_pl['irf'] = name_irf
+                    like_pl.run()
+
+                    ts = -like_pl.obs().models()[0].ts()
+                    if ts > 0:
+                        sqrt_ts_like = np.sqrt(ts)
+                    else:
+                        sqrt_ts_like = 0
 
             f.write(
-                f"{src_name},{ra_src},{dec_src},{seed},{index},{RA_point},{DEC_point},{sim_rad},{t_in_point},{t_end_point},0\n")
-
-    #     # VISIBILITY PART
-    #     # choose between AUTO mode (use visibility) and MANUAL mode (manually insert IRF)
-    #     # simulation_mode = sim_in['IRF']['mode']
-    #     #
-    #     # if simulation_mode == "auto":
-    #     #     print("using visibility to get IRFs")
-    #     #
-    #     #     # GRB information from the fits header
-    #     #     ra = fits_header_0['RA']
-    #     #     dec = fits_header_0['DEC']
-    #     #     t0 = Time(fits_header_0['GRBJD'])
-    #     #
-    #     #     irf_dict = sim_in['IRF']
-    #     #     site = irf_dict['site']
-    #     #     obs_condition = Observability(site=site)
-    #     #     obs_condition.set_irf(irf_dict)
-    #     #
-    #     #     t_zero_mode = ctobss_params['time']['t_zero'].lower()
-    #     #     print("time starts when source becomes visible")
-    #     #     obs_condition.Proposal_obTime = 86400
-    #     #     condition_check = obs_condition.check(RA=ra, DEC=dec, t_start=t0)
-    #     #
-    #     # else:
-    #     #     print(f"wrong input for IRF - mode. Input is {simulation_mode}. Only 'AUTO' is supported in GW analysis")
-    #     #     sys.exit()
-    #
+                f"{src_name}\t{ra_src}\t{dec_src}\t{seed}\t{index}\t{src_from_pointing.value:.2f}\t{src_from_pointing.value < sim_rad}\t{RA_point:.2f}\t{DEC_point:.2f}\t{sim_rad}\t{t_in_point:.2f}\t{t_end_point:.2f}\t{sigma_onoff:.2f}\t{sqrt_ts_like}\n")
 
 
 if __name__ == '__main__':

@@ -23,26 +23,26 @@ IRF:                                  # asterisc: mandatory  both for manual and
 source:
   type: GW                                # can be GW or GRB
   pointings_path: $MAIN_FOLDER/pointings  # only for GW
-  run_gw: [16, 17,19, 19]
-  merger_gw: [340, 261, 70, 268]
-  max_sources: 5                         # for testing: limits the number of simulations to do
+  run_gw: [16, 17]
+  merger_gw: [340, 261]
+  max_sources: 2                         # for testing: limits the number of simulations to do
 
 # the actual parameters for the  simulation
 ctobssim:
-  realizations: 2                       # simulations to be done per each model
+  realizations: 1                       # simulations to be done per each model
   models_in:
     xml_path: $MAIN_FOLDER/models       # input folder for the FITS files
     fits_path: $MAIN_FOLDER/input       # output folder wih XML files for ctools
   radius: 2.5                           # in degrees. useless to have a value larger than 5 (radius of SSTs fov)
   energy:
-    e_min: 50 GeV
+    e_min: 70 GeV
     e_max: 5 TeV
-  save_simulation: yes                # yes: simulation saved and analysis stopped. no: full chain on disk
+  save_simulation: no                # yes: simulation saved and analysis stopped. no: full chain on disk
   output_path: $MAIN_FOLDER/eventlist
 
 detection:
-  counts: yes                         # uses ctskymap RING method. to disable --> no.
-  pars_counts:                        # input parameters (see ctools documentation)
+  skymap_significance: yes                         # uses ctskymap RING method. to disable --> no.
+  parameters_skymap:                        # input parameters (see ctools documentation)
     ra_center: 0
     scale: 0.02                       # deg/pixel scale of the image
     roiradius: 0.2
@@ -50,5 +50,12 @@ detection:
     outradius: 0.8
     iterations: 3
     threshold: 5
-  detect_like: yes
-output: $MAIN_FOLDER/output           # output folder for the results of the simulations
+    remove_fits: no
+  srcdetect_likelihood: yes
+  parameters_detect:
+    scale: 0.02                       # deg/pixel scale of the image
+    threshold: 5
+    correlation: 0.1
+    par_4: 0
+output:
+  path: $MAIN_FOLDER/output           # output folder for the results of the simulations
