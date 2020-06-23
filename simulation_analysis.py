@@ -8,7 +8,6 @@ from utils import create_path
 from irf_handler import IRFPicker
 import astropy.units as u
 from astropy.io import fits
-from gammapy.stats import significance_on_off
 import numpy as np
 import glob
 from utils import Observability
