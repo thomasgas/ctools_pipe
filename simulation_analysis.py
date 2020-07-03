@@ -165,15 +165,17 @@ def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
 
         # ctselect to save data on disk
         if save_simulation:
+            event_list_path = create_path(f"{ctobss_params['output_path']}/{src_name}/")
+            #obs.save(f"{event_list_path}/event_list_source-{src_name}_seed-{seed:03}.fits")
+
             select_time = ctools.ctselect(obs)
             select_time['rad'] = sim_rad
             select_time['tmin'] = sim_t_min
             select_time['tmax'] = sim_t_max
             select_time['emin'] = sim_e_min
             select_time['emax'] = sim_e_max
-            event_list_path = create_path(f"{ctobss_params['output_path']}/{src_name}/")
-            select_time['outobs'] = f"{event_list_path}/event_list_source-{src_name}_seed-{seed:03}.fits"
-            select_time.execute()
+            select_time['outobs'] = f"{event_list_path}/event_list_source-{src_name}_{seed:03}.fits"
+            select_time.run()
             sys.exit()
 
         # delete all 70+ models from the obs def file...not needed any more
@@ -540,7 +542,7 @@ def gw_simulation(sim_in, config_in, model_xml, fits_model, counter):
             f"{point_path}/BNS-GW-Time_onAxis5deg_postRome.txt",
             sep=" ")
     except FileNotFoundError:
-        print("merger data not present. check!")
+        print("merger data not present. check if file 'BNS-GW-Time_onAxis5deg_postRome.txt' is in the 'pointings' folder!")
         sys.exit()
 
     filter_mask = (mergers_data["run"] == run_id) & (mergers_data["MergerID"] == f"Merger{merger_id}")
@@ -564,7 +566,7 @@ def gw_simulation(sim_in, config_in, model_xml, fits_model, counter):
         durations = pointing_data['Duration']
 
         # LOOP OVER POINTINGS
-        for index in range(0, len(pointing_data) - 1):
+        for index in range(0, len(pointing_data)):
             RA_point = RA_data[index]
             DEC_point = DEC_data[index]
             coordinate_pointing = SkyCoord(
@@ -694,6 +696,7 @@ def gw_simulation(sim_in, config_in, model_xml, fits_model, counter):
                 srcdetect = cscripts.cssrcdetect(skymap.skymap().copy())
                 srcdetect['srcmodel'] = 'POINT'
                 srcdetect['bkgmodel'] = 'NONE'
+                srcdetect['corr_kern'] = 'GAUSSIAN'
                 srcdetect['threshold'] = pars_detect['threshold']
                 srcdetect['corr_rad'] = pars_detect['correlation']
                 srcdetect.run()
@@ -754,6 +757,9 @@ def gw_simulation(sim_in, config_in, model_xml, fits_model, counter):
                         sqrt_ts_like = np.sqrt(ts)
                     else:
                         sqrt_ts_like = 0
+
+                    if pars_detect['remove_xml']:
+                        os.remove(xmlmodel_PL_ctlike_std)
 
             f.write(
                 f"{src_name}\t{ra_src}\t{dec_src}\t{seed}\t{index}\t{src_from_pointing.value:.2f}\t{src_from_pointing.value < sim_rad}\t{RA_point:.2f}\t{DEC_point:.2f}\t{sim_rad}\t{t_in_point:.2f}\t{t_end_point:.2f}\t{sigma_onoff:.2f}\t{sqrt_ts_like}\n")
