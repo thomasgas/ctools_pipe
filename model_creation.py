@@ -50,16 +50,21 @@ def create_models(input_yaml, jobs_yaml):
     max_models = models['max_models']
 
     if source_type == "GRB":
-        list_files = glob.glob(f"{input_data}/input/{phase}/*fits")[:max_models]
+        list_files = glob.glob(f"{input_data}/input/{phase}/*fits")
     elif source_type == "GW":
         list_run = models['run_gw']
         list_merger_id = models['merger_gw']
-        list_files = [f for f in glob.glob(f"{input_data}/input/*.fits")
-                      if (int(f.split('run')[-1][:4]) in list_run) and
-                      (int(f.split('run')[-1].split('.')[0][-4:]) in list_merger_id)]
+        if len(list_run) > 0 and len(list_merger_id) > 0:
+            list_files = [f for f in glob.glob(f"{input_data}/input/*.fits")
+                          if (int(f.split('run')[-1][:4]) in list_run) and
+                          (int(f.split('run')[-1].split('.')[0][-4:]) in list_merger_id)]
+        else:
+            list_files = glob.glob(f"{input_data}/input/*.fits")
     else:
         print(f"{source_type} not supported...use 'GW' or 'GRB'")
         sys.exit()
+
+    list_files = list_files[:max_models]
 
     # create example fits
     time_vals = np.zeros(4)

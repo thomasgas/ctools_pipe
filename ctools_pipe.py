@@ -232,14 +232,17 @@ if __name__ == '__main__':
 
         ctools_pipe_path = create_path(jobs_exe['exe']['software_path'])
 
+        max_models = models['max_sources']
+
         if models['type'] == "GW":
             list_run = models['run_gw']
             list_merger_id = models['merger_gw']
-            models_list = [f.split('/')[-1][:-5] for f in glob.glob(f"{fits_models_path}/*.fits")
-                           if (int(f.split('run')[-1][:4]) in list_run) and
-                           (int(f.split('run')[-1].split('.')[0][-4:]) in list_merger_id)]
-
-        max_models = models['max_sources']
+            if len(list_run) > 0 and len(list_merger_id) > 0:
+                models_list = [f.split('/')[-1][:-5] for f in glob.glob(f"{fits_models_path}/*.fits")
+                               if (int(f.split('run')[-1][:4]) in list_run) and
+                               (int(f.split('run')[-1].split('.')[0][-4:]) in list_merger_id)]
+            else:
+                models_list = [f.split('/')[-1][:-5] for f in glob.glob(f"{fits_models_path}/*.fits")]
 
         if execution['mode'] == "local":
             # loop over the models
