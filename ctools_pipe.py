@@ -237,7 +237,7 @@ if __name__ == '__main__':
         if models['type'] == "GW":
             list_run = models['run_gw']
             list_merger_id = models['merger_gw']
-            if len(list_run) > 0 and len(list_merger_id) > 0:
+            if list_run is not None and list_merger_id is not None:
                 models_list = [f.split('/')[-1][:-5] for f in glob.glob(f"{fits_models_path}/*.fits")
                                if (int(f.split('run')[-1][:4]) in list_run) and
                                (int(f.split('run')[-1].split('.')[0][-4:]) in list_merger_id)]

@@ -54,7 +54,7 @@ def create_models(input_yaml, jobs_yaml):
     elif source_type == "GW":
         list_run = models['run_gw']
         list_merger_id = models['merger_gw']
-        if len(list_run) > 0 and len(list_merger_id) > 0:
+        if list_run is not None and list_merger_id is not None:
             list_files = [f for f in glob.glob(f"{input_data}/input/*.fits")
                           if (int(f.split('run')[-1][:4]) in list_run) and
                           (int(f.split('run')[-1].split('.')[0][-4:]) in list_merger_id)]
