@@ -203,7 +203,10 @@ class Observability:
                                  'TS': self.threshold}}
 
             irf = IRFPicker(IRFstruct, root_folder=self._root_folder)
-            IRF_name = irf.irf_pick()
+            irf_info = irf.irf_pick()
+            IRF_name = irf_info['name'][0]
+            minimum_energy = irf_info['e_min_GeV'][0]
+            maximum_energy = irf_info['e_max_GeV'][0]
             t_in_window = TimeDelta(time_in_window[0] - alert_time).to_value(u.s)
             t_end_window = t_in_window + self.Steps_observability
 
@@ -222,7 +225,15 @@ class Observability:
                 times_end.append(t_end_window)
 
         result_dataframe = pd.DataFrame(
-            data={'IRF_name': IRF_name_list, 'IRF': IRF_list, 't_in': times_begin, 't_end': times_end})
+            data={
+                'IRF_name': IRF_name_list,
+                'IRF': IRF_list,
+                't_in': times_begin,
+                't_end': times_end,
+                'e_min_GeV': minimum_energy,
+                'e_max_GeV': maximum_energy
+            }
+        )
 
         result_dataframe['duration'] = result_dataframe['t_end'] - result_dataframe['t_in']
 

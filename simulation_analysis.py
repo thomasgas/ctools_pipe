@@ -108,7 +108,7 @@ def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
 
             # find proper IRF name
             irf = IRFPicker(sim_in, ctools_pipe_path)
-            name_irf = irf.irf_pick()
+            name_irf = irf.irf_pick()['name'][0]
 
             backgrounds_path = create_path(ctobss_params['bckgrnd_path'])
             fits_background_list = glob.glob(
@@ -597,7 +597,12 @@ def gw_simulation(sim_in, config_in, model_xml, fits_model, counter):
 
             name_irf = condition_check['IRF_name'][0]
             irf = condition_check['IRF'][0]
-            # model loading
+            min_energy_irf = u.Quantity(condition_check['e_min_GeV'][0], u.GeV).to_value(u.TeV)
+            max_energy_irf = u.Quantity(condition_check['e_max_GeV'][0], u.GeV).to_value(u.TeV)
+
+            # the energy range is the intersection between the IRF one and the one provided in the yaml
+            min_energy_value = max(min_energy_irf, sim_e_min)
+            max_energy_value = min(max_energy_irf, sim_e_max)
 
             if irf.prod_number == "3b" and irf.prod_version == 0:
                 caldb = "prod3b"
@@ -614,8 +619,8 @@ def gw_simulation(sim_in, config_in, model_xml, fits_model, counter):
             sim['rad'] = sim_rad
             sim['tmin'] = t_in_point.value
             sim['tmax'] = t_end_point.value
-            sim['emin'] = sim_e_min
-            sim['emax'] = sim_e_max
+            sim['emin'] = min_energy_value
+            sim['emax'] = max_energy_value
             sim['seed'] = seed
 
             if save_simulation:
@@ -653,8 +658,8 @@ def gw_simulation(sim_in, config_in, model_xml, fits_model, counter):
                 skymap['binsz'] = scale
                 skymap['nxpix'] = npix
                 skymap['nypix'] = npix
-                skymap['emin'] = sim_e_min
-                skymap['emax'] = sim_e_max
+                skymap['emin'] = min_energy_value
+                skymap['emax'] = max_energy_value
                 skymap['bkgsubtract'] = 'RING'
                 skymap['roiradius'] = pars_skymap['roiradius']
                 skymap['inradius'] = pars_skymap['inradius']
@@ -687,8 +692,8 @@ def gw_simulation(sim_in, config_in, model_xml, fits_model, counter):
                 skymap['binsz'] = scale
                 skymap['nxpix'] = npix
                 skymap['nypix'] = npix
-                skymap['emin'] = sim_e_min
-                skymap['emax'] = sim_e_max
+                skymap['emin'] = min_energy_value
+                skymap['emax'] = max_energy_value
                 skymap['bkgsubtract'] = 'NONE'
                 skymap.run()
 

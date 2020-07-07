@@ -2,6 +2,7 @@ from astropy.table import Table
 import sys
 import yaml
 
+
 class IRFPicker:
     def __init__(self, irf_container, root_folder="."):
         """
@@ -34,7 +35,7 @@ class IRFPicker:
                 (irf_table['zenith'] == self.zenith) &
                 (irf_table['pointing'] == self.irf_pointing) &
                 (irf_table['time'] == self.irf_time)
-            ]['name']
+            ]
 
         elif self.prod_number == "3b" and self.prod_version == 1:
             irf_table = Table.read(f"{self._root_folder}/irf_fits/prod3b-v1.fits")
@@ -43,7 +44,7 @@ class IRFPicker:
                 (irf_table['pointing'] == self.irf_pointing) &
                 (irf_table['zenith'] == self.zenith) &
                 (irf_table['time'] == self.irf_time)
-            ]['name']
+            ]
 
         elif self.prod_number == "3b" and self.prod_version == 0:
             irf_table = Table.read(f"{self._root_folder}/irf_fits/prod3b.fits")
@@ -54,13 +55,10 @@ class IRFPicker:
                 (irf_table['time'] == self.irf_time) &
                 (irf_table['subarray'] == self.irf_subarray) &
                 (irf_table['TS'] == self.TS)
-            ]['name']
-        else:
-            irf = None
-            print("Cannot open any prod fits file. Try with other numbers.\n")
+            ]
 
         try:
-            return irf[0]
+            return irf
         except IndexError:
             print("No IRF available with those inputs.")
             print("------------------------")
