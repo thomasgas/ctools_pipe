@@ -101,6 +101,12 @@ def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
             irf = IRFPicker(sim_in, ctools_pipe_path)
             irf_info = irf.irf_pick()
             IRF_name = irf_info['name'][0]
+            min_energy_irf = irf_info['e_min_GeV'][0]
+            max_energy_irf = irf_info['e_max_GeV'][0]
+
+            # the energy range is the intersection between the IRF one and the one provided in the yaml
+            min_energy_value = max(min_energy_irf, sim_e_min)
+            max_energy_value = min(max_energy_irf, sim_e_max)
 
         else:
             print(f"wrong input for IRF - mode. Input is {simulation_mode}. Use 'auto' or 'manual' instead")
@@ -121,8 +127,8 @@ def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
         sim['rad'] = sim_rad
         sim['tmin'] = sim_t_min
         sim['tmax'] = sim_t_max
-        sim['emin'] = sim_e_min
-        sim['emax'] = sim_e_max
+        sim['emin'] = min_energy_value
+        sim['emax'] = max_energy_value
         sim['seed'] = seed
         sim.run()
 
@@ -137,8 +143,8 @@ def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
             select_time['rad'] = sim_rad
             select_time['tmin'] = sim_t_min
             select_time['tmax'] = sim_t_max
-            select_time['emin'] = sim_e_min
-            select_time['emax'] = sim_e_max
+            select_time['emin'] = min_energy_value
+            select_time['emax'] = max_energy_value
             select_time['outobs'] = f"{event_list_path}/event_list_source-{src_name}_{seed:03}.fits"
             select_time.run()
             sys.exit()
@@ -207,8 +213,8 @@ def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
             select_time['rad'] = sim_rad
             select_time['tmin'] = t_in
             select_time['tmax'] = t_end
-            select_time['emin'] = sim_e_min
-            select_time['emax'] = sim_e_max
+            select_time['emin'] = min_energy_value
+            select_time['emax'] = max_energy_value
             select_time.run()
 
             if mode_3:
@@ -218,8 +224,8 @@ def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
                 onoff_time_sel = cscripts.csphagen(select_time.obs().copy())
                 onoff_time_sel['inmodel'] = 'NONE'
                 onoff_time_sel['ebinalg'] = 'LOG'
-                onoff_time_sel['emin'] = sim_e_min
-                onoff_time_sel['emax'] = sim_e_max
+                onoff_time_sel['emin'] = min_energy_value
+                onoff_time_sel['emax'] = max_energy_value
                 onoff_time_sel['enumbins'] = 30
                 onoff_time_sel['coordsys'] = 'CEL'
                 onoff_time_sel['ra'] = 0.0
