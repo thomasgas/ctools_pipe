@@ -54,15 +54,6 @@ ctselect:
 
 # detection methods implemented: counts, ctlike-onoff and ctlike-std
 detection:
-  counts: yes                         # simple Li&Ma (uses ctskymap RING method). to disable --> no.
-  pars_counts:                        # input parameters (see ctools documentation)
-    ra_center: 0
-    scale: 0.02                       # deg/pixel scale of the image
-    roiradius: 0.2
-    inradius: 0.6
-    outradius: 0.8
-    iterations: 3
-    threshold: 5
   ctlike-onoff: no                  # onoff with ctools. Needs to create a input model. to disable --> no.
   ctlike-std: no                     # standard ctlike. Needs to create a input model. to disable --> no.
 output:

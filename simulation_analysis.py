@@ -16,15 +16,6 @@ import pandas as pd
 from astropy.coordinates import SkyCoord
 
 
-def sort_background(input_background_list):
-    """
-    simple function to sort the background files according to the number of the file
-    :param input_background_list: list of background events from glob.glob
-    :return: the ordered list of files
-    """
-    return input_background_list.split('_')[-2]
-
-
 def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
     """
     Function to handle the GRB simulation.
@@ -108,19 +99,8 @@ def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
 
             # find proper IRF name
             irf = IRFPicker(sim_in, ctools_pipe_path)
-            name_irf = irf.irf_pick()['name'][0]
-
-            backgrounds_path = create_path(ctobss_params['bckgrnd_path'])
-            fits_background_list = glob.glob(
-                f"{backgrounds_path}/{irf.prod_number}_{irf.prod_version}_{name_irf}/background*.fits")
-
-            if len(fits_background_list) == 0:
-                print(f"No background for IRF {name_irf}")
-                sys.exit()
-
-            fits_background_list = sorted(fits_background_list, key=sort_background)
-            background_fits = fits_background_list[int(counter) - 1]
-            obs_back = gammalib.GCTAObservation(background_fits)
+            irf_info = irf.irf_pick()
+            IRF_name = irf_info['name'][0]
 
         else:
             print(f"wrong input for IRF - mode. Input is {simulation_mode}. Use 'auto' or 'manual' instead")
@@ -135,7 +115,7 @@ def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
         sim = ctools.ctobssim()
         sim['inmodel'] = model_xml
         sim['caldb'] = caldb
-        sim['irf'] = name_irf
+        sim['irf'] = IRF_name
         sim['ra'] = 0.0
         sim['dec'] = 0.0
         sim['rad'] = sim_rad
@@ -147,21 +127,6 @@ def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
         sim.run()
 
         obs = sim.obs()
-
-        # # move the source photons from closer to (RA,DEC)=(0,0), where the background is located
-        # for event in obs[0].events():
-        #     # ra_evt = event.dir().dir().ra()
-        #     dec_evt = event.dir().dir().dec()
-        #     ra_evt_deg = event.dir().dir().ra_deg()
-        #     dec_evt_deg = event.dir().dir().dec_deg()
-        #
-        #     ra_corrected = (ra_evt_deg - ra_pointing)*np.cos(dec_evt)
-        #     dec_corrected = dec_evt_deg - dec_pointing
-        #     event.dir().dir().radec_deg(ra_corrected, dec_corrected)
-
-        # append all background events to GRB ones ==> there's just one observation and not two
-        for event in obs_back.events():
-            obs[0].events().append(event)
 
         # ctselect to save data on disk
         if save_simulation:
@@ -223,7 +188,6 @@ def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
         # ------------------------------------
 
         ctlike_mode = sim_in['detection']
-        mode_1 = ctlike_mode['counts']
         mode_2 = ctlike_mode['ctlike-onoff']
         mode_3 = ctlike_mode['ctlike-std']
 
@@ -246,38 +210,6 @@ def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
             select_time['emin'] = sim_e_min
             select_time['emax'] = sim_e_max
             select_time.run()
-
-            if mode_1:
-                fits_temp_title = f"skymap_{seed}_{t_in:.2f}_{t_end:.2f}.fits"
-                pars_counts = ctlike_mode['pars_counts']
-                scale = float(pars_counts['scale'])
-                npix = 2*int(sim_rad/scale)
-                skymap = ctools.ctskymap(select_time.obs().copy())
-                skymap['emin'] = sim_e_min
-                skymap['emax'] = sim_e_max
-                skymap['nxpix'] = npix
-                skymap['nypix'] = npix
-                skymap['binsz'] = scale
-                skymap['proj'] = 'TAN'
-                skymap['coordsys'] = 'CEL'
-                skymap['xref'] = 0
-                skymap['yref'] = 0
-                skymap['bkgsubtract'] = 'RING'
-                skymap['roiradius'] = pars_counts['roiradius']
-                skymap['inradius'] = pars_counts['inradius']
-                skymap['outradius'] = pars_counts['outradius']
-                skymap['iterations'] = pars_counts['iterations']
-                skymap['threshold'] = pars_counts['threshold']
-                skymap['outmap'] = fits_temp_title
-                skymap.execute()
-
-                input_fits = fits.open(fits_temp_title)
-                datain = input_fits[2].data
-                datain[np.isnan(datain)] = 0.0
-                datain[np.isinf(datain)] = 0.0
-
-                sigma_onoff = np.max(datain)
-                os.remove(fits_temp_title)
 
             if mode_3:
                 dict_obs_select_time['std'] = select_time.obs().copy()
