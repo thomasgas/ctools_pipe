@@ -16,6 +16,110 @@ import pandas as pd
 from astropy.coordinates import SkyCoord
 
 
+def simulate_grb(sim_in, config_in, model_xml, fits_header_0, counter):
+    """
+    Function to handle the GRB simulation.
+    :param sim_in: the yaml file for the simulation (unpacked as a dict of dicts)
+    :param config_in: the yaml file for the job handling (unpacked as a dict of dicts)
+    :param model_xml: the XML model name for the source under analysis
+    :param fits_header_0: header for the fits file of the GRB model to use. Used in the visibility calculation
+    :param counter: integer number. counts the id of the source realization
+    :return: significance obtained with the activated detection methods
+    """
+
+    src_name = model_xml.split('/')[-1].split('model_')[1][:-4]
+    print(src_name, counter)
+
+    ctools_pipe_path = create_path(config_in['exe']['software_path'])
+    ctobss_params = sim_in['ctobssim']
+
+    seed = int(counter)*10
+
+    # PARAMETERS FROM THE CTOBSSIM
+    sim_t_min = u.Quantity(ctobss_params['time']['t_min']).to_value(u.s)
+    sim_t_max = u.Quantity(ctobss_params['time']['t_max']).to_value(u.s)
+    sim_e_min = u.Quantity(ctobss_params['energy']['e_min']).to_value(u.TeV)
+    sim_e_max = u.Quantity(ctobss_params['energy']['e_max']).to_value(u.TeV)
+    sim_rad = ctobss_params['radius']
+
+    models = sim_in['source']
+
+    phase = models['phase']
+
+    output_path = create_path(sim_in['output']['path'] + '/' + phase + '/' + src_name)
+
+    # VISIBILITY PART
+    # choose between AUTO mode (use visibility) and MANUAL mode (manually insert IRF)
+    simulation_mode = sim_in['IRF']['mode']
+
+    if simulation_mode == "auto":
+        print("using visibility to get IRFs")
+
+    elif simulation_mode == "manual":
+        print("manual picking IRF")
+
+        # find proper IRF name
+        irf = IRFPicker(sim_in, ctools_pipe_path)
+        irf_info = irf.irf_pick()
+        IRF_name = irf_info['name'][0]
+        min_energy_irf = u.Quantity(irf_info['e_min_GeV'][0], u.GeV).to_value(u.TeV)
+        max_energy_irf = u.Quantity(irf_info['e_max_GeV'][0], u.GeV).to_value(u.TeV)
+
+        # the energy range is the intersection between the IRF one and the one provided in the yaml
+        min_energy_value = max(min_energy_irf, sim_e_min)
+        max_energy_value = min(max_energy_irf, sim_e_max)
+
+        if irf.prod_number == "3b" and irf.prod_version == 0:
+            caldb = "prod3b"
+        else:
+            caldb = f'prod{irf.prod_number}-v{irf.prod_version}'
+
+    else:
+        print(f"wrong input for IRF - mode. Input is {simulation_mode}. Use 'auto' or 'manual' instead")
+        sys.exit()
+
+    # simulation slices
+    select_time = sim_in['ctselect']['time_cut']
+    slices = int(select_time['t_slices'])
+
+    if slices == 0:
+        times = [sim_t_min, sim_t_max]
+    elif slices > 0:
+        time_mode = select_time['mode']
+        if time_mode == "log":
+            times = np.logspace(np.log10(sim_t_min), np.log10(sim_t_max), slices + 1, endpoint=True)
+        elif time_mode == "lin":
+            times = np.linspace(sim_t_min, sim_t_max, slices + 1, endpoint=True)
+        else:
+            print(f"{time_mode} not valid. Use 'log' or 'lin' ")
+            sys.exit()
+    else:
+        print(f"value {slices} not supported...check yaml file")
+        sys.exit()
+
+    times_start = times[:-1]
+    times_end = times[1:]
+
+    for t_in, t_end in zip(times_start, times_end):
+        # source simulation
+        sim = ctools.ctobssim()
+        sim['inmodel'] = model_xml
+        sim['caldb'] = caldb
+        sim['irf'] = IRF_name
+        sim['ra'] = 0.0
+        sim['dec'] = 0.0
+        sim['rad'] = sim_rad
+        sim['tmin'] = sim_t_min
+        sim['tmax'] = sim_t_max
+        sim['emin'] = min_energy_value
+        sim['emax'] = max_energy_value
+        sim['seed'] = seed
+        event_list_path = create_path(f"{ctobss_params['output_path']}/{phase}/{src_name}/seed-{seed}/")
+        outfile = f"{event_list_path}/evt_list-{src_name}_seed-{seed:03}_tin-{t_in:.2f}_tend-{t_end:.2f}.fits"
+        sim['outevents'] = outfile
+        sim.execute()
+
+
 def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
     """
     Function to handle the GRB simulation.
@@ -43,14 +147,10 @@ def grb_simulation(sim_in, config_in, model_xml, fits_header_0, counter):
     sim_rad = ctobss_params['radius']
 
     models = sim_in['source']
-    source_type = models['type']
 
-    if source_type == "GRB":
-        phase_path = "/" + models['phase']
-    elif source_type == "GW":
-        phase_path = ""
+    phase = models['phase']
 
-    output_path = create_path(sim_in['output']['path'] + phase_path + '/' + src_name)
+    output_path = create_path(sim_in['output']['path'] + '/' + phase + '/' + src_name)
 
     save_simulation = ctobss_params['save_simulation']
 
